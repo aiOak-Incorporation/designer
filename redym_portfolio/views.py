@@ -279,7 +279,7 @@ REDYM Platform
             )
 
             messages.success(request, "🎉 Welcome to REDYM! Your account has been created successfully. An admin will review and approve it shortly.")
-            return redirect("registration/login.html")
+            return redirect("login")
     else:
         form = DesignerSignUpForm()
     return render(request, "registration/signup.html", {"form": form})
