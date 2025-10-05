@@ -50,7 +50,7 @@ class CollectionsPageView(TemplateView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
 
-        # ✅ Slug → cover mapping (keys exactly match COLLECTION_DETAILS)
+        # ✅ Cover images mapping based on folder names from constants
         covers = {
             "collection1": "images/collection/covers/1.png",
             "collection2": "images/collection/covers/2.png",
@@ -62,11 +62,12 @@ class CollectionsPageView(TemplateView):
 
         collections = []
         for slug, details in COLLECTION_DETAILS.items():
+            folder_name = details.get('folder', slug)  # Use folder mapping from constants
             collections.append({
                 "slug": slug,
                 "title": details["title"],
                 "year": details["year"],
-                "cover": static(covers.get(slug, "images/placeholder.png")),
+                "cover": covers.get(folder_name, "images/placehold.png"),
             })
 
         # Sort by year ascending
@@ -92,8 +93,9 @@ class CollectionDetailView(View):
         if not collection:
             raise Http404("Collection not found")
 
-        # ✅ 2. Use slug directly for folder mapping
-        rel_folder = f"images/collection/{collection['slug']}/"
+        # ✅ 2. Use folder mapping from constants
+        folder_name = collection.get('folder', slug)  # Fallback to slug if no folder mapping
+        rel_folder = f"images/collection/{folder_name}/"
         abs_folder = os.path.join(settings.BASE_DIR, "redym_portfolio", "static", rel_folder)
 
         if not os.path.isdir(abs_folder):
@@ -277,7 +279,7 @@ REDYM Platform
             )
 
             messages.success(request, "🎉 Welcome to REDYM! Your account has been created successfully. An admin will review and approve it shortly.")
-            return redirect("login")
+            return redirect("registration/login.html")
     else:
         form = DesignerSignUpForm()
     return render(request, "registration/signup.html", {"form": form})

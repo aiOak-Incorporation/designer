@@ -1,86 +1,87 @@
-{% extends "redym_portfolio/base.html" %}
-{% load static %}
-{% load text_filters %}
-
-{% block content %}
+{% extends "redym_portfolio/base.html" %} {% load static %} {% load text_filters
+%} {% block content %}
 <main class="collection-grid">
   <!-- LEFT -->
   <div class="collection-text">
     <h1>{{ collection.title }}</h1>
     {% if collection.year %}
-      <h2>{{ collection.year }}</h2>
-    {% endif %}
-    {% for para in collection.text %}
-      <p>{{ para|linebreaks }}</p>
+    <h2>{{ collection.year }}</h2>
+    {% endif %} {% for para in collection.text %}
+    <p>{{ para|linebreaks }}</p>
     {% endfor %}
   </div>
 
   <!-- RIGHT -->
   <div class="collection-images">
     {% for file in media %}
-      <button
-        type="button"
-        class="thumb-icon"
-        onclick="openPopup({{ forloop.counter0 }})"
-        aria-label="Open {{ file.name|default:'media' }}"
-      >
-        {% if file.type == "image" %}
-          <img src="{{ file.url }}" alt="{{ file.name|default:'image' }}" loading="lazy" />
-        {% else %}
-          <video muted preload="none" poster="{{ file.url }}">
-            <source src="{{ file.url }}" type="video/mp4" />
-          </video>
-          <span class="play-overlay">&#9658;</span>
-        {% endif %}
-      </button>
+    <button
+      type="button"
+      class="thumb-icon"
+      onclick="openPopup({{ forloop.counter0 }})"
+      aria-label="Open {{ file.name|default:'media' }}"
+    >
+      {% if file.type == "image" %}
+      <img
+        src="{{ file.url }}"
+        alt="{{ file.name|default:'image' }}"
+        loading="lazy"
+      />
+      {% else %}
+      <video muted preload="none" poster="{{ file.url }}">
+        <source src="{{ file.url }}" type="video/mp4" />
+      </video>
+      <span class="play-overlay">&#9658;</span>
+      {% endif %}
+    </button>
     {% endfor %}
   </div>
 </main>
 
 <!-- POPUP -->
 <div id="popup" class="popup">
-  <button type="button" class="close" onclick="closePopup()" aria-label="Close popup">&times;</button>
-  <button type="button" class="arrow left" onclick="changePopup(-1)" aria-label="Previous">&#10094;</button>
-  <button type="button" class="arrow right" onclick="changePopup(1)" aria-label="Next">&#10095;</button>
+  <button
+    type="button"
+    class="close"
+    onclick="closePopup()"
+    aria-label="Close popup"
+  >
+    &times;
+  </button>
+  <button
+    type="button"
+    class="arrow left"
+    onclick="changePopup(-1)"
+    aria-label="Previous"
+  >
+    &#10094;
+  </button>
+  <button
+    type="button"
+    class="arrow right"
+    onclick="changePopup(1)"
+    aria-label="Next"
+  >
+    &#10095;
+  </button>
 
   <div class="popup-inner">
-    <img id="popup-img" class="popup-content" src="" alt="" style="display: none" />
-    <video id="popup-video" class="popup-content" controls style="display: none"></video>
-
-    <!-- Generate Techpack CTA -->
-    <div class="popup-actions">
-      <button id="genTechpackBtn" class="btn-primary" type="button">📄 Generate Techpack</button>
-    </div>
+    <img
+      id="popup-img"
+      class="popup-content"
+      src=""
+      alt=""
+      style="display: none"
+    />
+    <video
+      id="popup-video"
+      class="popup-content"
+      controls
+      style="display: none"
+    ></video>
   </div>
 </div>
 
-<!-- LOGIN MODAL -->
-<div id="loginModal" class="modal">
-  <div class="modal-card">
-    <button class="modal-close" type="button" onclick="closeLoginModal()">×</button>
-    <h3>Login required</h3>
-    <form method="post" action="{% url 'login' %}?next={{ request.path }}">
-      {% csrf_token %}
-      <label>Username<input type="text" name="username" required /></label>
-      <label>Password<input type="password" name="password" required /></label>
-      <button class="btn-primary" type="submit">Log in</button>
-    </form>
-    <p class="modal-note">
-      Don't have an account?
-      <a href="{% url 'signup' %}?next={{ request.path }}">Sign up</a>
-    </p>
-  </div>
-</div>
-
-<!-- LOADING OVERLAY -->
-<div id="loadingOverlay" class="loading-overlay">
-  <div class="spinner"></div>
-  <p>Generating Techpack...</p>
-</div>
-{% endblock %}
-
-
-{% block scripts %}
+{% endblock %} {% block scripts %}
 <script>
   // Media list for popup
   let mediaItems = [
@@ -90,8 +91,7 @@
   ];
   let currentIndex = 0;
 
-  const isAuthenticated = {{ request.user.is_authenticated|yesno:"true,false" }};
-  const techpackBase = "{% url 'generate_techpack' slug=collection.slug %}";
+
 
   // Popup controls
   function openPopup(index){
@@ -121,21 +121,7 @@
     openPopup(currentIndex);
   }
 
-  // Generate Techpack behavior
-  document.getElementById("genTechpackBtn").addEventListener("click", function(){
-    if(!isAuthenticated){
-      openLoginModal();
-      return;
-    }
 
-    showLoadingOverlay("Generating Techpack...");
-
-    // Delay slightly for visual feedback before redirect
-    setTimeout(() => {
-      window.location = techpackBase;
-      hideLoadingOverlay();
-    }, 1000);
-  });
 
   // Loading overlay controls
   function showLoadingOverlay(message="Loading...") {
@@ -153,7 +139,6 @@
   function closeLoginModal(){ document.getElementById("loginModal").classList.remove("show"); }
 </script>
 {% endblock %}
-
 
 <style>
   /* ===== Layout ===== */
@@ -175,7 +160,8 @@
     gap: 12px;
   }
 
-  .thumb-icon img, .thumb-icon video {
+  .thumb-icon img,
+  .thumb-icon video {
     width: 100%;
     border-radius: 10px;
     cursor: pointer;
@@ -193,7 +179,9 @@
     background: rgba(0, 0, 0, 0.9);
     z-index: 9999;
   }
-  .popup.show { display: block; }
+  .popup.show {
+    display: block;
+  }
   .popup-inner {
     position: relative;
     top: 50%;
@@ -222,8 +210,12 @@
     transform: none;
     font-size: 40px;
   }
-  .popup .arrow.left { left: 20px; }
-  .popup .arrow.right { right: 20px; }
+  .popup .arrow.left {
+    left: 20px;
+  }
+  .popup .arrow.right {
+    right: 20px;
+  }
 
   .popup-actions {
     margin-top: 16px;
@@ -239,7 +231,9 @@
     color: #fff;
     font-weight: 700;
   }
-  .btn-primary:hover { filter: brightness(1.1); }
+  .btn-primary:hover {
+    filter: brightness(1.1);
+  }
 
   /* ===== Login modal ===== */
   .modal {
@@ -271,7 +265,10 @@
     font-size: 24px;
     cursor: pointer;
   }
-  .modal-card h3 { margin: 0 0 12px; color: #280768; }
+  .modal-card h3 {
+    margin: 0 0 12px;
+    color: #280768;
+  }
   .modal-card label {
     display: block;
     font-weight: 600;
@@ -301,9 +298,11 @@
     align-items: center;
     flex-direction: column;
     gap: 16px;
-    font-family: 'Inter', sans-serif;
+    font-family: "Inter", sans-serif;
   }
-  .loading-overlay.show { display: flex; }
+  .loading-overlay.show {
+    display: flex;
+  }
   .loading-overlay p {
     font-size: 1.2rem;
     letter-spacing: 0.5px;
@@ -317,5 +316,9 @@
     height: 50px;
     animation: spin 1s linear infinite;
   }
-  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
 </style>

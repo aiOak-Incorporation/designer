@@ -1,6 +1,7 @@
 COLLECTION_DETAILS = {
     "2023-redym-collection-1": {
         "slug": "2023-redym-collection-1",
+        "folder": "collection1",  # Maps to actual folder name
         "title": "2023 Redym Collection 1",
         "year": "2023",
         "season": "Spring",
@@ -8,13 +9,15 @@ COLLECTION_DETAILS = {
     },
     "2024-redym-collection-2": {
         "slug": "2024-redym-collection-2",
+        "folder": "collection2",  # Maps to actual folder name
         "title": "2024 Redym Collection 2",
         "year": "2024",
         "season": "Summer",
         "description": "Vibrant tones and breezy silhouettes.",
     },
-    "204-redym-collection-1": {
+    "2024-redym-collection-1": {  # Fixed typo: was "204-redym-collection-1"
         "slug": "2024-redym-collection-1",
+        "folder": "collection3",  # Maps to actual folder name
         "title": "2024 Redym Collection 1",
         "year": "2024",
         "season": "Fall",
@@ -22,6 +25,7 @@ COLLECTION_DETAILS = {
     },
     "2025-redym-collection-4": {
         "slug": "2025-redym-collection-4",
+        "folder": "collection4",  # Maps to actual folder name
         "title": "2025 Redym Collection 4",
         "year": "2025",
         "season": "Spring",
@@ -29,6 +33,7 @@ COLLECTION_DETAILS = {
     },
     "2025-redym-collection-5": {
         "slug": "2025-redym-collection-5",
+        "folder": "collection5",  # Maps to actual folder name
         "title": "2025 Redym Collection 5",
         "year": "2025",
         "season": "Summer",
@@ -36,6 +41,7 @@ COLLECTION_DETAILS = {
     },
     "2026-redym-collection-6": {
         "slug": "2026-redym-collection-6",
+        "folder": "collection6",  # Maps to actual folder name
         "title": "2026 Redym Collection 6",
         "year": "2026",
         "season": "Fall",
