@@ -1,0 +1,251 @@
+{% extends "redym_portfolio/base.html" %} {% block title %}Designer Login |
+Redym{% endblock %} {% block content %}
+<div
+  class="login-container"
+  style="
+    max-width: 400px;
+    margin: 60px auto;
+    padding: 30px;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  "
+>
+  <h2 style="text-align: center; margin-bottom: 20px; color: #280768">
+    Designer Login
+  </h2>
+
+  {% if form.errors %}
+  <p style="color: red; text-align: center; margin-bottom: 20px">
+    Invalid username or password. Please try again.
+  </p>
+  {% endif %}
+
+  <form method="post" style="display: flex; flex-direction: column; gap: 15px">
+    {% csrf_token %}
+
+    <!-- Username Field -->
+    <input
+      type="text"
+      name="username"
+      required
+      maxlength="150"
+      style="
+        width: 100%;
+        padding: 14px;
+        border: 2px solid #e1e5e9;
+        border-radius: 8px;
+        font-size: 16px;
+        transition: all 0.3s ease;
+        box-sizing: border-box;
+      "
+      placeholder="Username"
+      value="{{ form.username.value|default:'' }}"
+    />
+
+    <!-- Password Field -->
+    <input
+      type="password"
+      name="password"
+      required
+      style="
+        width: 100%;
+        padding: 14px;
+        border: 2px solid #e1e5e9;
+        border-radius: 8px;
+        font-size: 16px;
+        transition: all 0.3s ease;
+        box-sizing: border-box;
+      "
+      placeholder="Password"
+    />
+
+    <button
+      type="submit"
+      style="
+        background: linear-gradient(135deg, #280768, #3d0a85);
+        color: #fff;
+        padding: 16px;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      "
+    >
+      Login
+    </button>
+  </form>
+
+  <!-- Login Actions -->
+  <div
+    class="login-actions"
+    style="
+      margin-top: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    "
+  >
+    <a
+      href="{% url 'password_reset' %}"
+      style="color: #800000; text-decoration: none; font-size: 14px"
+    >
+      Forgot your password?
+    </a>
+    <div class="new-user-link" style="text-align: right">
+      <span style="color: #666; font-size: 14px">New to REDYM?</span>
+      <a
+        href="{% url 'signup' %}"
+        style="
+          color: #280768;
+          text-decoration: none;
+          font-weight: bold;
+          margin-left: 8px;
+          font-size: 14px;
+        "
+      >
+        Sign up
+      </a>
+    </div>
+  </div>
+
+  <!-- Social Login Section - Coming Soon -->
+  <div
+    class="social-login-section"
+    style="margin-top: 20px; text-align: center"
+  >
+    <p style="margin-bottom: 15px; color: #666; font-size: 14px">
+      Social login coming soon!
+    </p>
+    <div
+      class="social-login-buttons"
+      style="display: flex; justify-content: center; gap: 15px"
+    >
+      <div
+        class="social-login-btn google disabled"
+        title="Google login - Coming Soon"
+      >
+        <span>G</span>
+      </div>
+      <div
+        class="social-login-btn linkedin disabled"
+        title="LinkedIn login - Coming Soon"
+      >
+        <i class="fab fa-linkedin-in"></i>
+      </div>
+      <div
+        class="social-login-btn instagram disabled"
+        title="Instagram login - Coming Soon"
+      >
+        <i class="fab fa-instagram"></i>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .social-login-btn {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 18px;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+  }
+
+  .social-login-btn.google {
+    background: #280768;
+    color: white;
+    border-color: #280768;
+  }
+
+  .social-login-btn.google span {
+    font-family: "Google Sans", sans-serif;
+    font-weight: 500;
+    font-size: 24px;
+  }
+
+  .social-login-btn.linkedin {
+    background: #280768;
+    color: white;
+    border-color: #280768;
+  }
+
+  .social-login-btn.instagram {
+    background: #280768;
+    color: white;
+    border-color: #280768;
+  }
+
+  .social-login-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  }
+
+  .social-login-btn.google:hover {
+    background: #db4437;
+    border-color: #db4437;
+  }
+
+  .social-login-btn.linkedin:hover {
+    background: #0077b5;
+    border-color: #0077b5;
+  }
+
+  .social-login-btn.instagram:hover {
+    background: linear-gradient(
+      45deg,
+      #f09433 0%,
+      #e6683c 25%,
+      #dc2743 50%,
+      #cc2366 75%,
+      #bc1888 100%
+    );
+    border-color: #bc1888;
+  }
+
+  /* Disabled state for social buttons */
+  .social-login-btn.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  .social-login-btn.disabled:hover {
+    transform: none;
+    box-shadow: none;
+  }
+
+  /* Login Actions Styling */
+  .login-actions a:hover {
+    text-decoration: underline !important;
+  }
+
+  .new-user-link a:hover {
+    color: #1a0540 !important;
+  }
+
+  /* Responsive adjustments */
+  @media (max-width: 480px) {
+    .login-actions {
+      flex-direction: column !important;
+      align-items: center !important;
+      gap: 15px !important;
+    }
+
+    .new-user-link {
+      text-align: center !important;
+    }
+  }
+</style>
+
+{% endblock %}

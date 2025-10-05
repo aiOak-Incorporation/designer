@@ -1,0 +1,382 @@
+{% extends "redym_portfolio/base.html" %} {% load static %} {% block title %}My
+Designs | REDYM{% endblock %} {% block content %}
+<div
+  class="designs-container"
+  style="max-width: 1200px; margin: 0 auto; padding: 20px"
+>
+  <!-- Page Header -->
+  <div
+    class="page-header"
+    style="
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 2px solid #f0f0f0;
+    "
+  >
+    <div>
+      <h1 style="margin: 0; color: #280768; font-size: 32px; font-weight: 700">
+        My Designs
+      </h1>
+      <p style="margin: 5px 0 0 0; color: #666; font-size: 16px">
+        Manage and showcase your creative portfolio
+      </p>
+    </div>
+    <a
+      href="{% url 'designer_design_create' %}"
+      style="
+        background: #280768;
+        color: white;
+        padding: 12px 24px;
+        text-decoration: none;
+        border-radius: 8px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+      "
+    >
+      <i class="fas fa-plus" style="margin-right: 8px"></i>
+      New Design
+    </a>
+  </div>
+
+  <!-- Designs Grid -->
+  {% if designs %}
+  <div
+    class="designs-grid"
+    style="
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 25px;
+    "
+  >
+    {% for design in designs %}
+    <div
+      class="design-card"
+      style="
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        transition: all 0.3s ease;
+      "
+    >
+      <!-- Design Image -->
+      <div
+        class="design-image"
+        style="position: relative; height: 200px; overflow: hidden"
+      >
+        {% if design.cover_image %}
+        <img
+          src="{{ design.cover_image.url }}"
+          alt="{{ design.title }}"
+          style="width: 100%; height: 100%; object-fit: cover"
+        />
+        {% else %}
+        <div
+          style="
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #adb5bd;
+          "
+        >
+          <i class="fas fa-image" style="font-size: 48px"></i>
+        </div>
+        {% endif %}
+
+        <!-- Quick Actions Overlay -->
+        <div
+          class="design-overlay"
+          style="
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            gap: 8px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+          "
+        >
+          <a
+            href="{% url 'designer_design_edit' design.slug %}"
+            style="
+              background: rgba(52, 152, 219, 0.9);
+              color: white;
+              padding: 8px;
+              border-radius: 50%;
+              text-decoration: none;
+              width: 36px;
+              height: 36px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            "
+          >
+            <i class="fas fa-edit"></i>
+          </a>
+          <a
+            href="{% url 'designer_design_delete' design.slug %}"
+            style="
+              background: rgba(231, 76, 60, 0.9);
+              color: white;
+              padding: 8px;
+              border-radius: 50%;
+              text-decoration: none;
+              width: 36px;
+              height: 36px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            "
+          >
+            <i class="fas fa-trash"></i>
+          </a>
+        </div>
+      </div>
+
+      <!-- Design Content -->
+      <div style="padding: 20px">
+        <h3
+          style="
+            margin: 0 0 8px 0;
+            color: #333;
+            font-size: 18px;
+            font-weight: 600;
+          "
+        >
+          {{ design.title }}
+        </h3>
+
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+          "
+        >
+          <span style="color: #666; font-size: 14px"
+            >{{ design.season }} {{ design.year }}</span
+          >
+          {% if design.price %}
+          <span style="color: #280768; font-weight: 600; font-size: 14px"
+            >${{ design.price }}</span
+          >
+          {% endif %}
+        </div>
+
+        {% if design.description %}
+        <p
+          style="
+            margin: 0 0 15px 0;
+            color: #666;
+            font-size: 14px;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+          "
+        >
+          {{ design.description|truncatewords:20 }}
+        </p>
+        {% endif %}
+
+        <!-- Action Buttons -->
+        <div style="display: flex; gap: 8px; margin-top: 15px">
+          <a
+            href="{% url 'design_detail' design.slug %}"
+            style="
+              flex: 1;
+              background: #f8f9fa;
+              color: #333;
+              padding: 10px 15px;
+              text-decoration: none;
+              border-radius: 6px;
+              text-align: center;
+              font-size: 14px;
+              font-weight: 600;
+              border: 1px solid #e9ecef;
+              transition: all 0.3s ease;
+            "
+          >
+            View
+          </a>
+          <a
+            href="{% url 'designer_design_edit' design.slug %}"
+            style="
+              flex: 1;
+              background: #3498db;
+              color: white;
+              padding: 10px 15px;
+              text-decoration: none;
+              border-radius: 6px;
+              text-align: center;
+              font-size: 14px;
+              font-weight: 600;
+              transition: all 0.3s ease;
+            "
+          >
+            Edit
+          </a>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Pagination -->
+  {% if is_paginated %}
+  <div style="display: flex; justify-content: center; margin-top: 40px">
+    <div style="display: flex; align-items: center; gap: 10px">
+      {% if page_obj.has_previous %}
+      <a
+        href="?page=1"
+        style="
+          padding: 8px 12px;
+          background: #f8f9fa;
+          color: #333;
+          text-decoration: none;
+          border-radius: 4px;
+          border: 1px solid #e9ecef;
+        "
+        >First</a
+      >
+      <a
+        href="?page={{ page_obj.previous_page_number }}"
+        style="
+          padding: 8px 12px;
+          background: #f8f9fa;
+          color: #333;
+          text-decoration: none;
+          border-radius: 4px;
+          border: 1px solid #e9ecef;
+        "
+        >Previous</a
+      >
+      {% endif %}
+
+      <span
+        style="
+          padding: 8px 16px;
+          background: #280768;
+          color: white;
+          border-radius: 4px;
+          font-weight: 600;
+        "
+      >
+        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+      </span>
+
+      {% if page_obj.has_next %}
+      <a
+        href="?page={{ page_obj.next_page_number }}"
+        style="
+          padding: 8px 12px;
+          background: #f8f9fa;
+          color: #333;
+          text-decoration: none;
+          border-radius: 4px;
+          border: 1px solid #e9ecef;
+        "
+        >Next</a
+      >
+      <a
+        href="?page={{ page_obj.paginator.num_pages }}"
+        style="
+          padding: 8px 12px;
+          background: #f8f9fa;
+          color: #333;
+          text-decoration: none;
+          border-radius: 4px;
+          border: 1px solid #e9ecef;
+        "
+        >Last</a
+      >
+      {% endif %}
+    </div>
+  </div>
+  {% endif %} {% else %}
+  <!-- Empty State -->
+  <div style="text-align: center; padding: 60px 20px; color: #666">
+    <div
+      style="
+        background: #f8f9fa;
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 30px auto;
+      "
+    >
+      <i class="fas fa-palette" style="font-size: 48px; color: #ddd"></i>
+    </div>
+    <h2 style="margin: 0 0 15px 0; color: #333; font-size: 24px">
+      No designs yet
+    </h2>
+    <p
+      style="
+        margin: 0 0 30px 0;
+        font-size: 16px;
+        max-width: 400px;
+        margin-left: auto;
+        margin-right: auto;
+      "
+    >
+      Start building your portfolio by creating your first design. Share your
+      creativity with the world!
+    </p>
+    <a
+      href="{% url 'designer_design_create' %}"
+      style="
+        background: #280768;
+        color: white;
+        padding: 15px 30px;
+        text-decoration: none;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 16px;
+        display: inline-block;
+      "
+    >
+      <i class="fas fa-plus" style="margin-right: 8px"></i>
+      Create Your First Design
+    </a>
+  </div>
+  {% endif %}
+</div>
+
+<style>
+  .design-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15) !important;
+  }
+
+  .design-card:hover .design-overlay {
+    opacity: 1 !important;
+  }
+
+  .designs-grid .design-card a:hover {
+    transform: translateY(-1px);
+  }
+
+  @media (max-width: 768px) {
+    .designs-grid {
+      grid-template-columns: 1fr !important;
+    }
+
+    .page-header {
+      flex-direction: column !important;
+      align-items: flex-start !important;
+      gap: 15px;
+    }
+  }
+</style>
+
+{% endblock %}

@@ -1,0 +1,122 @@
+{% load static %}
+<!-- HEADER -->
+<header
+  class="header"
+  style="background: #280768; padding: 15px 30px; color: #fff"
+>
+  <div
+    class="header__inner"
+    style="
+      max-width: 1800px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    "
+  >
+    <!-- Logo + Navigation -->
+    <div
+      class="header__left"
+      style="display: flex; align-items: center; gap: 40px"
+    >
+      <a class="brand" href="{% url 'home' %}">
+        <img
+          class="brand__mark"
+          src="{% static 'images/brand/logo-maroon.png' %}"
+          alt="redym"
+          style="height: 50px"
+        />
+      </a>
+
+      <nav class="nav">
+        <a href="{% url 'collections' %}">Collections</a>
+        <a href="{% url 'event_list' %}">Events</a>
+        <a href="{% url 'about' %}">About Me</a>
+        {% if user.is_authenticated %}
+        <a href="{% url 'logout' %}">Logout</a>
+        {% else %}
+        <a href="{% url 'login' %}">Designer</a>
+        {% endif %}
+      </nav>
+    </div>
+
+    <!-- Social Links -->
+    <div class="header__social" style="display: flex; gap: 15px">
+      <a
+        href="https://www.linkedin.com/in/manya-marri-8b434917a/"
+        target="_blank"
+        aria-label="LinkedIn"
+        ><i class="fab fa-linkedin-in"></i
+      ></a>
+      <a
+        href="https://www.instagram.com/runvolumeone/"
+        target="_blank"
+        aria-label="Instagram"
+        ><i class="fab fa-instagram"></i
+      ></a>
+      <a
+        href="https://mail.google.com/mail/?view=cm&fs=1&to=manya.marri@gmail.com"
+        aria-label="Gmail"
+        ><i class="fa-regular fa-envelope"></i
+      ></a>
+    </div>
+  </div>
+</header>
+
+<!-- Logo hover swap -->
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const logo = document.querySelector(".brand__mark");
+    const blackLogo = "{% static 'images/brand/logo-dark.png' %}";
+    const redLogo = "{% static 'images/brand/logo-maroon.png' %}";
+    logo.addEventListener("mouseenter", () => {
+      logo.src = redLogo;
+    });
+    logo.addEventListener("mouseleave", () => {
+      logo.src = blackLogo;
+    });
+  });
+</script>
+
+<style>
+  .nav a {
+    margin: 0 15px;
+    color: #fff;
+    text-decoration: none;
+    text-transform: uppercase; /* UPPERCASE */
+    font-weight: bold; /* BOLD */
+    font-size: 14.9px; /* Custom size */
+    letter-spacing: 0.5px; /* optional: adds spacing for cleaner look */
+  }
+
+  .nav a:hover {
+    color: darkorange; /* hover effect */
+  }
+
+  /* ===== Social Icons Styling ===== */
+  .header__social {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+  }
+
+  .header__social a {
+    width: 42px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #fff;
+    border-radius: 50%;
+    color: #fff;
+    font-size: 18px;
+    transition: all 0.3s ease;
+  }
+
+  /* Unified Hover Effect for ALL icons */
+  .header__social a:hover {
+    background: darkorange;
+    border-color: darkorange;
+    color: #fff;
+  }
+</style>

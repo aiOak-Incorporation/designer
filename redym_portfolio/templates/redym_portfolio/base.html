@@ -1,0 +1,46 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Redym Portfolio{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <link rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+      integrity="sha512-xh6giXq...snipped..."
+      crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+</head>
+<body>
+  <!-- Navbar -->
+  {% include "redym_portfolio/includes/navbar.html" %}
+
+  <!-- Main content -->
+  <main class="main-content">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Footer -->
+  {% include "redym_portfolio/includes/footer.html" %}
+
+  <!-- Shared popup (for images/videos) -->
+  <div id="popup" class="popup">
+    <span class="close" onclick="closePopup()">&times;</span>
+    <span class="arrow left" onclick="changePopup(-1)">&#10094;</span>
+    <span class="arrow right" onclick="changePopup(1)">&#10095;</span>
+    <div class="popup-inner">
+      <img id="popup-img" class="popup-content" src="" alt="" style="display:none;">
+      <video id="popup-video" class="popup-content" controls style="display:none;"></video>
+      <div id="popup-caption" class="caption"></div>
+    </div>
+  </div>
+
+  <!-- Global scripts -->
+  <script src="{% static 'js/main.js' %}"></script>
+
+  <!-- Page-specific scripts -->
+  {% block scripts %}{% endblock %}
+</body>
+</html>

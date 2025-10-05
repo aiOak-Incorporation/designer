@@ -1,0 +1,35 @@
+{% extends "redym_portfolio/base.html" %}
+
+{% block content %}
+<div class="upload-design-container" style="max-width:700px; margin:40px auto; padding:20px; background:#fff; border-radius:10px; box-shadow:0 2px 10px rgba(0,0,0,0.1);">
+  <h2 style="margin-bottom:20px; text-align:center;">Upload New Design & Techpack</h2>
+
+  {% if messages %}
+  <ul class="messages">
+    {% for message in messages %}
+      <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    <fieldset style="margin-bottom:25px;">
+      <legend><strong>Design Details</strong></legend>
+      {{ design_form.as_p }}
+    </fieldset>
+
+    <fieldset style="margin-bottom:25px;">
+      <legend><strong>Techpack Details</strong></legend>
+      {{ techpack_form.as_p }}
+    </fieldset>
+
+    <div style="text-align:center;">
+      <button type="submit" style="background:#800000; color:#fff; padding:10px 20px; border:none; border-radius:5px; cursor:pointer;">
+        Upload
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}
