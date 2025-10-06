@@ -1,5 +1,6 @@
 from django.db import models
 from django.utils.text import slugify
+from django.contrib.auth.models import User
 
 
 # ---------------- Base Timestamp ----------------
@@ -94,19 +95,54 @@ class Look(models.Model):
 class Design(TimeStampedModel):
     title = models.CharField(max_length=120)
     slug = models.SlugField(max_length=140, unique=True, blank=True)
+    designer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='designs')
     season = models.CharField(max_length=50, blank=True)
     year = models.PositiveIntegerField(default=2025)
     cover_image = models.ImageField(upload_to="designs/covers/", blank=True, null=True)
     description = models.TextField(blank=True)
     published = models.BooleanField(default=True)
+    
+    # Tech pack files
+    techpack_pdf = models.FileField(
+        upload_to="designs/techpacks/pdf/", 
+        blank=True, 
+        null=True,
+        help_text="Upload tech pack as PDF file"
+    )
+    techpack_excel = models.FileField(
+        upload_to="designs/techpacks/excel/", 
+        blank=True, 
+        null=True,
+        help_text="Upload tech pack as Excel file"
+    )
+    
+    # Additional tech pack details
+    fabric_details = models.TextField(blank=True, help_text="Fabric specifications and requirements")
+    color_palette = models.CharField(max_length=500, blank=True, help_text="Color codes and descriptions")
+    size_range = models.CharField(max_length=100, blank=True, help_text="Available size range (e.g., XS-XL)")
+    target_price = models.DecimalField(max_digits=8, decimal_places=2, blank=True, null=True, help_text="Target retail price")
+    production_notes = models.TextField(blank=True, help_text="Special production requirements or notes")
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(f"{self.title}-{self.year}")
+            base_slug = slugify(f"{self.title}-{self.year}")
+            slug = base_slug
+            counter = 1
+            while Design.objects.filter(slug=slug).exists():
+                slug = f"{base_slug}-{counter}"
+                counter += 1
+            self.slug = slug
         return super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.title} ({self.year})"
+        return f"{self.title} ({self.year}) by {self.designer.username}"
+    
+    @property
+    def has_techpack(self):
+        return bool(self.techpack_pdf or self.techpack_excel)
+    
+    class Meta:
+        ordering = ['-created_at']
 
 
 # ---------------- Techpack ----------------
@@ -171,9 +207,6 @@ class EventImage(TimeStampedModel):
     def __str__(self):
         return f"Image for {self.event.title}"
 
-# redym_portfolio/models.py
-
-from django.db import models
 
 class RejectedDesigner(models.Model):
     username = models.CharField(max_length=150)
@@ -183,3 +216,154 @@ class RejectedDesigner(models.Model):
 
     def __str__(self):
         return f"{self.username} (Rejected on {self.rejected_at:%Y-%m-%d})"
+
+
+# ---------------- Designer Profile ----------------
+class DesignerProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='designer_profile')
+    bio = models.TextField(max_length=1000, blank=True, help_text="Tell us about yourself and your design philosophy")
+    profile_image = models.ImageField(upload_to="designers/profiles/", blank=True, null=True)
+    portfolio_website = models.URLField(blank=True, help_text="Your personal website or portfolio")
+    instagram_handle = models.CharField(max_length=100, blank=True, help_text="Instagram username (without @)")
+    linkedin_profile = models.URLField(blank=True, help_text="LinkedIn profile URL")
+    
+    # Professional details
+    years_of_experience = models.PositiveIntegerField(default=0, help_text="Years of design experience")
+    specialization = models.CharField(
+        max_length=200, 
+        blank=True, 
+        help_text="e.g., Sustainable Fashion, Avant-garde, Streetwear"
+    )
+    education = models.CharField(max_length=300, blank=True, help_text="Educational background")
+    location = models.CharField(max_length=100, blank=True, help_text="City, Country")
+    
+    # Contact preferences
+    available_for_collaborations = models.BooleanField(default=True)
+    contact_email = models.EmailField(blank=True, help_text="Public contact email (optional)")
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"{self.user.username}'s Profile"
+    
+    class Meta:
+        verbose_name = "Designer Profile"
+        verbose_name_plural = "Designer Profiles"
+
+
+# ---------------- Subscription Models ----------------
+class SubscriptionPlan(models.Model):
+    PLAN_TYPES = [
+        ('weekly', 'Weekly'),
+        ('biweekly', 'Bi-Weekly'),
+        ('monthly', 'Monthly'),
+        ('6months', '6 Months'),
+        ('yearly', 'Yearly'),
+    ]
+    
+    name = models.CharField(max_length=50, choices=PLAN_TYPES, unique=True)
+    display_name = models.CharField(max_length=100)
+    price = models.DecimalField(max_digits=8, decimal_places=2)
+    duration_days = models.IntegerField()  # Duration in days
+    stripe_price_id = models.CharField(max_length=200, blank=True, null=True)
+    paypal_plan_id = models.CharField(max_length=200, blank=True, null=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"{self.display_name} - ${self.price}"
+    
+    class Meta:
+        ordering = ['price']
+
+
+class UserSubscription(models.Model):
+    PAYMENT_METHODS = [
+        ('stripe', 'Stripe (Credit/Debit Card)'),
+        ('paypal', 'PayPal'),
+        ('applepay', 'Apple Pay'),
+    ]
+    
+    STATUS_CHOICES = [
+        ('free_trial', 'Free Trial'),
+        ('active', 'Active'),
+        ('canceled', 'Canceled'),
+        ('expired', 'Expired'),
+        ('past_due', 'Past Due'),
+    ]
+    
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='subscription')
+    plan = models.ForeignKey(SubscriptionPlan, on_delete=models.CASCADE, null=True, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='free_trial')
+    payment_method = models.CharField(max_length=20, choices=PAYMENT_METHODS, blank=True, null=True)
+    
+    # Trial information
+    trial_start_date = models.DateTimeField(auto_now_add=True)
+    trial_end_date = models.DateTimeField()
+    
+    # Subscription information
+    subscription_start_date = models.DateTimeField(null=True, blank=True)
+    subscription_end_date = models.DateTimeField(null=True, blank=True)
+    
+    # Payment provider IDs
+    stripe_customer_id = models.CharField(max_length=200, blank=True, null=True)
+    stripe_subscription_id = models.CharField(max_length=200, blank=True, null=True)
+    paypal_subscription_id = models.CharField(max_length=200, blank=True, null=True)
+    
+    # Billing information
+    next_billing_date = models.DateTimeField(null=True, blank=True)
+    last_payment_date = models.DateTimeField(null=True, blank=True)
+    auto_renewal = models.BooleanField(default=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.status}"
+    
+    @property
+    def is_trial_active(self):
+        from django.utils import timezone
+        return self.status == 'free_trial' and self.trial_end_date > timezone.now()
+    
+    @property
+    def is_subscription_active(self):
+        from django.utils import timezone
+        return self.status == 'active' and self.subscription_end_date and self.subscription_end_date > timezone.now()
+    
+    @property
+    def days_left_in_trial(self):
+        from django.utils import timezone
+        if self.is_trial_active:
+            return (self.trial_end_date - timezone.now()).days
+        return 0
+
+
+class PaymentHistory(models.Model):
+    PAYMENT_STATUS = [
+        ('pending', 'Pending'),
+        ('completed', 'Completed'),
+        ('failed', 'Failed'),
+        ('refunded', 'Refunded'),
+    ]
+    
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='payment_history')
+    subscription = models.ForeignKey(UserSubscription, on_delete=models.CASCADE, related_name='payments')
+    amount = models.DecimalField(max_digits=8, decimal_places=2)
+    currency = models.CharField(max_length=3, default='USD')
+    payment_method = models.CharField(max_length=20, choices=UserSubscription.PAYMENT_METHODS)
+    status = models.CharField(max_length=20, choices=PAYMENT_STATUS, default='pending')
+    
+    # Provider transaction IDs
+    stripe_payment_intent_id = models.CharField(max_length=200, blank=True, null=True)
+    paypal_order_id = models.CharField(max_length=200, blank=True, null=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    
+    def __str__(self):
+        return f"{self.user.username} - ${self.amount} - {self.status}"
+    
+    class Meta:
+        ordering = ['-created_at']

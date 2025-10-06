@@ -14,7 +14,8 @@ from .views import (
     PendingDesignersView, approve_designer, reject_designer, reinstate_designer,
     AboutView,
     DesignerDashboardView, designer_designs_view, designer_design_create_view, 
-    designer_design_edit_view, designer_design_delete_view,
+    designer_design_edit_view, designer_design_delete_view, designer_design_detail_api,
+    designer_about_me_view, designer_contact_view,
 )
 
 
@@ -47,8 +48,11 @@ urlpatterns = [
     path("dashboard/", DesignerDashboardView.as_view(), name="designer_dashboard"),
     path("dashboard/designs/", designer_designs_view, name="designer_designs"),
     path("dashboard/designs/new/", designer_design_create_view, name="designer_design_create"),
-    path("dashboard/designs/<slug:slug>/edit/", designer_design_edit_view, name="designer_design_edit"),
-    path("dashboard/designs/<slug:slug>/delete/", designer_design_delete_view, name="designer_design_delete"),
+    path("dashboard/designs/<int:design_id>/edit/", designer_design_edit_view, name="designer_design_edit"),
+    path("dashboard/designs/<int:design_id>/delete/", designer_design_delete_view, name="designer_design_delete"),
+    path("dashboard/designs/<int:design_id>/details/", designer_design_detail_api, name="designer_design_detail_api"),
+    path("dashboard/about-me/", designer_about_me_view, name="designer_about_me"),
+    path("dashboard/contact/", designer_contact_view, name="designer_contact"),
     
     # Authenticated upload page
     path("designs/upload/", upload_design, name="upload_design"),
@@ -61,6 +65,19 @@ urlpatterns = [
     path("admin/approve-designer/<int:user_id>/", approve_designer, name="approve_designer"),
     path("admin/reject-designer/<int:user_id>/", reject_designer, name="reject_designer"),
     path("admin/reinstate-designer/<int:designer_id>/", reinstate_designer, name="reinstate_designer"),
+
+    # Subscription management
+    path("subscription/", views.subscription_dashboard, name="subscription_dashboard"),
+    path("subscription/change-plan/", views.change_subscription_plan, name="change_subscription_plan"),
+    path("subscription/cancel/", views.cancel_subscription, name="cancel_subscription"),
+    path("subscription/payment-methods/", views.payment_methods, name="payment_methods"),
+    path("subscription/billing-history/", views.billing_history, name="billing_history"),
+    
+    # Payment processing
+    path("payment/stripe/create-setup-intent/", views.create_stripe_setup_intent, name="create_stripe_setup_intent"),
+    path("payment/stripe/webhook/", views.stripe_webhook, name="stripe_webhook"),
+    path("payment/paypal/create-subscription/", views.create_paypal_subscription, name="create_paypal_subscription"),
+    path("payment/paypal/webhook/", views.paypal_webhook, name="paypal_webhook"),
 
      # ✅ Techpack generator route
     path("generate-techpack/<slug:slug>/", views.generate_techpack, name="generate_techpack"),

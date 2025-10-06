@@ -1,382 +1,558 @@
-{% extends "redym_portfolio/base.html" %} {% load static %} {% block title %}My
-Designs | REDYM{% endblock %} {% block content %}
-<div
-  class="designs-container"
-  style="max-width: 1200px; margin: 0 auto; padding: 20px"
->
-  <!-- Page Header -->
-  <div
-    class="page-header"
-    style="
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 30px;
-      padding-bottom: 20px;
-      border-bottom: 2px solid #f0f0f0;
-    "
-  >
-    <div>
-      <h1 style="margin: 0; color: #280768; font-size: 32px; font-weight: 700">
-        My Designs
-      </h1>
-      <p style="margin: 5px 0 0 0; color: #666; font-size: 16px">
-        Manage and showcase your creative portfolio
-      </p>
+{% extends "redym_portfolio/dashboard_base.html" %} {% block dashboard_title
+%}My Designs{% endblock %} {% block header_actions %}
+<a href="{% url 'designer_design_create' %}" class="btn btn-primary">
+  <i class="icon">➕</i>
+  Upload New Design
+</a>
+{% endblock %} {% block dashboard_content %}
+<div class="designs-page">
+  <!-- Filter and Search Bar -->
+  <div class="designs-header">
+    <div class="search-filter">
+      <div class="search-box">
+        <input
+          type="text"
+          id="designSearch"
+          placeholder="Search designs..."
+          onkeyup="filterDesigns()"
+        />
+        <i class="search-icon">🔍</i>
+      </div>
+
+      <div class="filter-options">
+        <select id="seasonFilter" onchange="filterDesigns()">
+          <option value="">All Seasons</option>
+          <option value="Spring">Spring</option>
+          <option value="Summer">Summer</option>
+          <option value="Fall">Fall</option>
+          <option value="Winter">Winter</option>
+        </select>
+
+        <select id="yearFilter" onchange="filterDesigns()">
+          <option value="">All Years</option>
+          {% for year in available_years %}
+          <option value="{{ year }}">{{ year }}</option>
+          {% endfor %}
+        </select>
+
+        <select id="statusFilter" onchange="filterDesigns()">
+          <option value="">All Status</option>
+          <option value="published">Published</option>
+          <option value="draft">Draft</option>
+        </select>
+      </div>
     </div>
-    <a
-      href="{% url 'designer_design_create' %}"
-      style="
-        background: #280768;
-        color: white;
-        padding: 12px 24px;
-        text-decoration: none;
-        border-radius: 8px;
-        font-weight: 600;
-        transition: all 0.3s ease;
-      "
-    >
-      <i class="fas fa-plus" style="margin-right: 8px"></i>
-      New Design
-    </a>
   </div>
 
   <!-- Designs Grid -->
-  {% if designs %}
-  <div
-    class="designs-grid"
-    style="
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 25px;
-    "
-  >
+  <div class="designs-grid" id="designsGrid">
     {% for design in designs %}
     <div
       class="design-card"
-      style="
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        overflow: hidden;
-        transition: all 0.3s ease;
-      "
+      data-title="{{ design.title|lower }}"
+      data-season="{{ design.season }}"
+      data-year="{{ design.year }}"
+      data-status="{% if design.published %}published{% else %}draft{% endif %}"
     >
       <!-- Design Image -->
-      <div
-        class="design-image"
-        style="position: relative; height: 200px; overflow: hidden"
-      >
+      <div class="design-image-container">
         {% if design.cover_image %}
         <img
           src="{{ design.cover_image.url }}"
           alt="{{ design.title }}"
-          style="width: 100%; height: 100%; object-fit: cover"
+          class="design-image"
         />
         {% else %}
-        <div
-          style="
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #adb5bd;
-          "
-        >
-          <i class="fas fa-image" style="font-size: 48px"></i>
+        <div class="design-placeholder">
+          <i class="icon">🎨</i>
         </div>
         {% endif %}
 
-        <!-- Quick Actions Overlay -->
+        <!-- Status Badge -->
         <div
-          class="design-overlay"
-          style="
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            display: flex;
-            gap: 8px;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-          "
+          class="status-badge {% if design.published %}published{% else %}draft{% endif %}"
         >
-          <a
-            href="{% url 'designer_design_edit' design.slug %}"
-            style="
-              background: rgba(52, 152, 219, 0.9);
-              color: white;
-              padding: 8px;
-              border-radius: 50%;
-              text-decoration: none;
-              width: 36px;
-              height: 36px;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-            "
+          {% if design.published %} ✓ Published {% else %} 📝 Draft {% endif %}
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="design-actions">
+          <button
+            onclick="openDesignModal('{{ design.id }}')"
+            class="action-btn view-btn"
+            title="View Details"
           >
-            <i class="fas fa-edit"></i>
-          </a>
+            👁️
+          </button>
           <a
-            href="{% url 'designer_design_delete' design.slug %}"
-            style="
-              background: rgba(231, 76, 60, 0.9);
-              color: white;
-              padding: 8px;
-              border-radius: 50%;
-              text-decoration: none;
-              width: 36px;
-              height: 36px;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-            "
+            href="{% url 'designer_design_edit' design.id %}"
+            class="action-btn edit-btn"
+            title="Edit"
           >
-            <i class="fas fa-trash"></i>
+            ✏️
           </a>
+          <button
+            onclick="deleteDesign('{{ design.id }}')"
+            class="action-btn delete-btn"
+            title="Delete"
+          >
+            🗑️
+          </button>
         </div>
       </div>
 
-      <!-- Design Content -->
-      <div style="padding: 20px">
-        <h3
-          style="
-            margin: 0 0 8px 0;
-            color: #333;
-            font-size: 18px;
-            font-weight: 600;
-          "
-        >
-          {{ design.title }}
-        </h3>
+      <!-- Design Info -->
+      <div class="design-info">
+        <h4>{{ design.title }}</h4>
+        <p class="design-meta">{{ design.season }} {{ design.year }}</p>
 
-        <div
-          style="
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 12px;
-          "
-        >
-          <span style="color: #666; font-size: 14px"
-            >{{ design.season }} {{ design.year }}</span
-          >
-          {% if design.price %}
-          <span style="color: #280768; font-weight: 600; font-size: 14px"
-            >${{ design.price }}</span
-          >
+        <div class="design-details">
+          {% if design.has_techpack %}
+          <span class="detail-badge techpack">📋 Tech Pack</span>
+          {% endif %} {% if design.target_price %}
+          <span class="detail-badge price">${{ design.target_price }}</span>
           {% endif %}
         </div>
 
-        {% if design.description %}
-        <p
-          style="
-            margin: 0 0 15px 0;
-            color: #666;
-            font-size: 14px;
-            line-height: 1.4;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-          "
-        >
-          {{ design.description|truncatewords:20 }}
-        </p>
-        {% endif %}
-
-        <!-- Action Buttons -->
-        <div style="display: flex; gap: 8px; margin-top: 15px">
-          <a
-            href="{% url 'design_detail' design.slug %}"
-            style="
-              flex: 1;
-              background: #f8f9fa;
-              color: #333;
-              padding: 10px 15px;
-              text-decoration: none;
-              border-radius: 6px;
-              text-align: center;
-              font-size: 14px;
-              font-weight: 600;
-              border: 1px solid #e9ecef;
-              transition: all 0.3s ease;
-            "
-          >
-            View
-          </a>
-          <a
-            href="{% url 'designer_design_edit' design.slug %}"
-            style="
-              flex: 1;
-              background: #3498db;
-              color: white;
-              padding: 10px 15px;
-              text-decoration: none;
-              border-radius: 6px;
-              text-align: center;
-              font-size: 14px;
-              font-weight: 600;
-              transition: all 0.3s ease;
-            "
-          >
-            Edit
-          </a>
+        <div class="design-tags">
+          {% if design.fabric_type %}
+          <span class="tag">{{ design.fabric_type }}</span>
+          {% endif %} {% if design.target_market %}
+          <span class="tag">{{ design.target_market }}</span>
+          {% endif %}
         </div>
       </div>
+    </div>
+    {% empty %}
+    <div class="empty-state">
+      <div class="empty-icon">🎨</div>
+      <h3>No designs found</h3>
+      <p>Start building your portfolio by uploading your first design!</p>
+      <a href="{% url 'designer_design_create' %}" class="btn btn-primary"
+        >Upload Design</a
+      >
     </div>
     {% endfor %}
   </div>
 
   <!-- Pagination -->
   {% if is_paginated %}
-  <div style="display: flex; justify-content: center; margin-top: 40px">
-    <div style="display: flex; align-items: center; gap: 10px">
+  <div class="pagination-container">
+    <div class="pagination">
       {% if page_obj.has_previous %}
-      <a
-        href="?page=1"
-        style="
-          padding: 8px 12px;
-          background: #f8f9fa;
-          color: #333;
-          text-decoration: none;
-          border-radius: 4px;
-          border: 1px solid #e9ecef;
-        "
-        >First</a
-      >
-      <a
-        href="?page={{ page_obj.previous_page_number }}"
-        style="
-          padding: 8px 12px;
-          background: #f8f9fa;
-          color: #333;
-          text-decoration: none;
-          border-radius: 4px;
-          border: 1px solid #e9ecef;
-        "
+      <a href="?page=1" class="page-link">First</a>
+      <a href="?page={{ page_obj.previous_page_number }}" class="page-link"
         >Previous</a
       >
       {% endif %}
 
-      <span
-        style="
-          padding: 8px 16px;
-          background: #280768;
-          color: white;
-          border-radius: 4px;
-          font-weight: 600;
-        "
-      >
+      <span class="page-info">
         Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
       </span>
 
       {% if page_obj.has_next %}
-      <a
-        href="?page={{ page_obj.next_page_number }}"
-        style="
-          padding: 8px 12px;
-          background: #f8f9fa;
-          color: #333;
-          text-decoration: none;
-          border-radius: 4px;
-          border: 1px solid #e9ecef;
-        "
-        >Next</a
-      >
-      <a
-        href="?page={{ page_obj.paginator.num_pages }}"
-        style="
-          padding: 8px 12px;
-          background: #f8f9fa;
-          color: #333;
-          text-decoration: none;
-          border-radius: 4px;
-          border: 1px solid #e9ecef;
-        "
+      <a href="?page={{ page_obj.next_page_number }}" class="page-link">Next</a>
+      <a href="?page={{ page_obj.paginator.num_pages }}" class="page-link"
         >Last</a
       >
       {% endif %}
     </div>
   </div>
-  {% endif %} {% else %}
-  <!-- Empty State -->
-  <div style="text-align: center; padding: 60px 20px; color: #666">
-    <div
-      style="
-        background: #f8f9fa;
-        width: 120px;
-        height: 120px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0 auto 30px auto;
-      "
-    >
-      <i class="fas fa-palette" style="font-size: 48px; color: #ddd"></i>
-    </div>
-    <h2 style="margin: 0 0 15px 0; color: #333; font-size: 24px">
-      No designs yet
-    </h2>
-    <p
-      style="
-        margin: 0 0 30px 0;
-        font-size: 16px;
-        max-width: 400px;
-        margin-left: auto;
-        margin-right: auto;
-      "
-    >
-      Start building your portfolio by creating your first design. Share your
-      creativity with the world!
-    </p>
-    <a
-      href="{% url 'designer_design_create' %}"
-      style="
-        background: #280768;
-        color: white;
-        padding: 15px 30px;
-        text-decoration: none;
-        border-radius: 8px;
-        font-weight: 600;
-        font-size: 16px;
-        display: inline-block;
-      "
-    >
-      <i class="fas fa-plus" style="margin-right: 8px"></i>
-      Create Your First Design
-    </a>
-  </div>
   {% endif %}
 </div>
 
+<!-- Include Design Detail Modal -->
+{% include 'redym_portfolio/design_detail_modal.html' %}
+
 <style>
+  .designs-page {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .designs-header {
+    margin-bottom: 30px;
+  }
+
+  .search-filter {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .search-box {
+    position: relative;
+    flex: 1;
+    min-width: 300px;
+  }
+
+  .search-box input {
+    width: 100%;
+    padding: 12px 40px 12px 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 16px;
+    transition: border-color 0.3s ease;
+  }
+
+  .search-box input:focus {
+    outline: none;
+    border-color: #280768;
+  }
+
+  .search-icon {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #666;
+  }
+
+  .filter-options {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+  }
+
+  .filter-options select {
+    padding: 10px 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: white;
+    font-size: 14px;
+  }
+
+  .designs-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 25px;
+  }
+
+  .design-card {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    position: relative;
+  }
+
   .design-card:hover {
     transform: translateY(-5px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15) !important;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
   }
 
-  .design-card:hover .design-overlay {
-    opacity: 1 !important;
+  .design-image-container {
+    position: relative;
+    overflow: hidden;
   }
 
-  .designs-grid .design-card a:hover {
-    transform: translateY(-1px);
+  .design-image {
+    width: 100%;
+    height: 220px;
+    object-fit: cover;
+    transition: transform 0.3s ease;
   }
 
+  .design-card:hover .design-image {
+    transform: scale(1.05);
+  }
+
+  .design-placeholder {
+    width: 100%;
+    height: 220px;
+    background: #f8f9fa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 48px;
+    color: #dee2e6;
+  }
+
+  .status-badge {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  .status-badge.published {
+    background: rgba(40, 167, 69, 0.9);
+    color: white;
+  }
+
+  .status-badge.draft {
+    background: rgba(255, 193, 7, 0.9);
+    color: #856404;
+  }
+
+  .design-actions {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    display: flex;
+    gap: 8px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .design-card:hover .design-actions {
+    opacity: 1;
+  }
+
+  .action-btn {
+    width: 35px;
+    height: 35px;
+    border: none;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    font-size: 14px;
+  }
+
+  .view-btn {
+    background: rgba(40, 7, 104, 0.9);
+    color: white;
+  }
+
+  .edit-btn {
+    background: rgba(255, 193, 7, 0.9);
+    color: #856404;
+  }
+
+  .delete-btn {
+    background: rgba(220, 53, 69, 0.9);
+    color: white;
+  }
+
+  .action-btn:hover {
+    transform: scale(1.1);
+  }
+
+  .design-info {
+    padding: 20px;
+  }
+
+  .design-info h4 {
+    margin: 0 0 8px 0;
+    color: #280768;
+    font-size: 18px;
+    font-weight: 600;
+  }
+
+  .design-meta {
+    margin: 0 0 15px 0;
+    color: #666;
+    font-size: 14px;
+  }
+
+  .design-details {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+
+  .detail-badge {
+    padding: 4px 10px;
+    border-radius: 15px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .detail-badge.techpack {
+    background: rgba(40, 7, 104, 0.1);
+    color: #280768;
+  }
+
+  .detail-badge.price {
+    background: rgba(40, 167, 69, 0.1);
+    color: #28a745;
+  }
+
+  .design-tags {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .tag {
+    padding: 3px 8px;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    font-size: 11px;
+    color: #666;
+  }
+
+  .empty-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 60px 20px;
+    background: white;
+    border-radius: 12px;
+  }
+
+  .empty-icon {
+    font-size: 64px;
+    margin-bottom: 20px;
+    opacity: 0.5;
+  }
+
+  .empty-state h3 {
+    margin: 0 0 10px 0;
+    color: #280768;
+    font-size: 24px;
+  }
+
+  .empty-state p {
+    margin: 0 0 25px 0;
+    color: #666;
+  }
+
+  .pagination-container {
+    margin-top: 40px;
+    display: flex;
+    justify-content: center;
+  }
+
+  .pagination {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .page-link {
+    padding: 8px 16px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    text-decoration: none;
+    color: #280768;
+    transition: all 0.3s ease;
+  }
+
+  .page-link:hover {
+    background: #280768;
+    color: white;
+  }
+
+  .page-info {
+    padding: 8px 16px;
+    color: #666;
+    font-weight: 500;
+  }
+
+  /* Responsive Design */
   @media (max-width: 768px) {
-    .designs-grid {
-      grid-template-columns: 1fr !important;
+    .search-filter {
+      flex-direction: column;
+      align-items: stretch;
     }
 
-    .page-header {
-      flex-direction: column !important;
-      align-items: flex-start !important;
+    .filter-options {
+      justify-content: space-between;
+    }
+
+    .designs-grid {
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
       gap: 15px;
+    }
+
+    .design-actions {
+      opacity: 1;
     }
   }
 </style>
 
+<script>
+  function filterDesigns() {
+    const searchTerm = document
+      .getElementById("designSearch")
+      .value.toLowerCase();
+    const seasonFilter = document.getElementById("seasonFilter").value;
+    const yearFilter = document.getElementById("yearFilter").value;
+    const statusFilter = document.getElementById("statusFilter").value;
+
+    const designCards = document.querySelectorAll(".design-card");
+
+    designCards.forEach((card) => {
+      const title = card.getAttribute("data-title");
+      const season = card.getAttribute("data-season");
+      const year = card.getAttribute("data-year");
+      const status = card.getAttribute("data-status");
+
+      const matchesSearch = title.includes(searchTerm);
+      const matchesSeason = !seasonFilter || season === seasonFilter;
+      const matchesYear = !yearFilter || year === yearFilter;
+      const matchesStatus = !statusFilter || status === statusFilter;
+
+      if (matchesSearch && matchesSeason && matchesYear && matchesStatus) {
+        card.style.display = "block";
+      } else {
+        card.style.display = "none";
+      }
+    });
+  }
+
+  function openDesignModal(designId) {
+    // For now, let's create a sample design object
+    // In a real application, you would fetch this data from your backend
+    const sampleDesignData = {
+      id: designId,
+      title: "Sample Design",
+      description: "This is a sample design description.",
+      category: "casual",
+      cover_image: "/static/images/sample-design.jpg",
+      fabric_type: "Cotton",
+      target_price: "29.99",
+      color_palette: "Blue, White",
+      season: "summer",
+      size_range: "XS-XL",
+      tech_pack_pdf: "/media/designs/sample-techpack.pdf",
+      tech_pack_excel: "/media/designs/sample-techpack.xlsx",
+      design_notes: "Special care instructions included.",
+      is_public: true,
+      is_featured: false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    // Open the modal with the sample data
+    openDesignModal(sampleDesignData);
+  }
+
+  function deleteDesign(designId) {
+    if (
+      confirm(
+        "Are you sure you want to delete this design? This action cannot be undone."
+      )
+    ) {
+      // Create a form and submit it
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = `/dashboard/designs/${designId}/delete/`;
+
+      const csrfToken = document.querySelector(
+        "[name=csrfmiddlewaretoken]"
+      ).value;
+      const csrfInput = document.createElement("input");
+      csrfInput.type = "hidden";
+      csrfInput.name = "csrfmiddlewaretoken";
+      csrfInput.value = csrfToken;
+
+      form.appendChild(csrfInput);
+      document.body.appendChild(form);
+      form.submit();
+    }
+  }
+</script>
 {% endblock %}
