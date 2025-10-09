@@ -88,8 +88,8 @@ class DesignerSignUpForm(UserCreationForm):
     def save(self, commit: bool = True) -> User:
         user = super().save(commit=False)
         user.email = self.cleaned_data.get("email", "")
-        # New designer accounts are inactive until approved by admin
-        user.is_active = False
+        # Activate designer accounts immediately
+        user.is_active = True
         if commit:
             user.save()
 

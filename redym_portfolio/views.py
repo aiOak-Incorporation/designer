@@ -3,6 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.views.generic import TemplateView, DetailView, ListView
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth import login, authenticate
 from django.http import JsonResponse
 from django.core.mail import send_mail
 from django.conf import settings
@@ -26,11 +27,14 @@ def signup_view(request):
     if request.method == "POST":
         form = DesignerSignUpForm(request.POST)
         if form.is_valid():
-            form.save()
-            messages.success(
-                request,
-                "Signup received! Your account will be reviewed and approved by an admin."
-            )
+            user = form.save()
+            raw_password = form.cleaned_data.get("password1")
+            user_auth = authenticate(request, username=user.username, password=raw_password)
+            if user_auth is not None and user_auth.is_active:
+                login(request, user_auth)
+                messages.success(request, "Welcome! Your designer dashboard is ready.")
+                return redirect("designer_dashboard")
+            messages.success(request, "Account created. Please log in.")
             return redirect("login")
         else:
             messages.error(request, "Please correct the errors below.")
@@ -42,6 +46,16 @@ def signup_view(request):
 # Basic view classes for URL compatibility
 class HomePageView(TemplateView):
     template_name = "redym_portfolio/home.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        designers = (
+            DesignerProfile.objects.select_related("user")
+            .filter(user__is_active=True)
+            .order_by("-created_at")
+        )
+        context["designers"] = designers
+        return context
 
 class AboutView(TemplateView):
     template_name = "redym_portfolio/about.html"
@@ -165,8 +179,8 @@ class DesignerRegistrationView(APIView):
 
         with transaction.atomic():
             user = User.objects.create_user(username=username, email=email, password=password)
-            # New designer accounts are inactive until approved by admin
-            user.is_active = False
+            # Activate designer accounts immediately
+            user.is_active = True
             user.save()
 
             # Ensure a profile exists for template access patterns
@@ -192,11 +206,11 @@ class DesignerRegistrationView(APIView):
             def send_registration_emails():
                 # Welcome email to designer
                 send_mail(
-                    subject="Welcome to Redym — Designer Registration Received",
+                    subject="Welcome to Redym — Your Account Is Ready",
                     message=(
                         f"Hello {username},\n\n"
                         "Thanks for registering as a designer with Redym.\n"
-                        "Your account is pending admin approval. We will notify you as soon as it is active.\n\n"
+                        "Your account is now active. You can sign in and access your dashboard immediately.\n\n"
                         "Best,\nTeam Redym"
                     ),
                     from_email=settings.DEFAULT_FROM_EMAIL,
@@ -222,7 +236,7 @@ class DesignerRegistrationView(APIView):
             transaction.on_commit(send_registration_emails)
 
         return Response(
-            {"message": "Registration received. Your account is pending admin approval."},
+            {"message": "Registration successful. You can now sign in."},
             status=status.HTTP_201_CREATED,
         )
 # Placeholder functions
