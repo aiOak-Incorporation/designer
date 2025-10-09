@@ -4,6 +4,8 @@ Django settings for redym project.
 
 from pathlib import Path
 import os
+import socket
+from urllib.parse import urlparse
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -131,32 +133,49 @@ USE_TZ = True
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# --- Caching ---
-if os.getenv("ENV") == "production":
+# --- Caching + Sessions ---
+# Prefer Redis when a valid REDIS_URL is provided and its hostname resolves.
+# Fall back to DB-backed sessions and local-memory cache otherwise.
+redis_url = os.getenv("REDIS_URL", "").strip()
+redis_hostname = None
+if redis_url:
+    try:
+        redis_hostname = urlparse(redis_url).hostname
+    except Exception:
+        redis_hostname = None
+
+use_redis_cache = False
+if redis_hostname:
+    try:
+        socket.gethostbyname(redis_hostname)
+        use_redis_cache = True
+    except Exception:
+        use_redis_cache = False
+
+if use_redis_cache:
     CACHES = {
         "default": {
             "BACKEND": "django_redis.cache.RedisCache",
-            "LOCATION": os.getenv("REDIS_URL", "redis://127.0.0.1:6379/1"),
+            "LOCATION": redis_url,
             "OPTIONS": {
                 "CLIENT_CLASS": "django_redis.client.DefaultClient",
-                # Optional: better compression & speed
                 "COMPRESSOR": "django_redis.compressors.zlib.ZlibCompressor",
             },
             "TIMEOUT": 60 * 60,  # cache timeout = 1 hour
         }
     }
+    # Use cache-backed sessions when Redis is available
+    SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+    SESSION_CACHE_ALIAS = "default"
 else:
-    # Local dev fallback (no Redis needed)
+    # Fallback: local-memory cache and DB-backed sessions (stable across processes)
     CACHES = {
         "default": {
             "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
             "LOCATION": "unique-redym-cache",
         }
     }
-
-# --- Sessions ---
-SESSION_ENGINE = "django.contrib.sessions.backends.cache"
-SESSION_CACHE_ALIAS = "default"
+    SESSION_ENGINE = "django.contrib.sessions.backends.db"
 
 # --- Email ---
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
