@@ -169,7 +169,7 @@ DEFAULT_FROM_EMAIL = "no-reply@redym.com"
 ADMIN_EMAIL = "chpreddy@gmail.com"
 
 
-LOGIN_REDIRECT_URL = "home"
+LOGIN_REDIRECT_URL = "designer_dashboard"
 LOGOUT_REDIRECT_URL = "home"
 DEBUG = os.getenv("DEBUG", "False") == "True"
 DEBUG=True

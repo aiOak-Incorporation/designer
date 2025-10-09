@@ -13,7 +13,14 @@ from django.utils import timezone
 from datetime import timedelta
 from django.db import transaction
 from .forms import DesignerSignUpForm
-from .models import DesignerProfile, SubscriptionPlan, UserSubscription
+from .models import (
+    DesignerProfile,
+    SubscriptionPlan,
+    UserSubscription,
+    Design,
+    Collection,
+    Event,
+)
 
 def signup_view(request):
     if request.method == "POST":
@@ -59,6 +66,43 @@ class EventDetailView(DetailView):
 
 class DesignerDashboardView(LoginRequiredMixin, TemplateView):
     template_name = "redym_portfolio/dashboard.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+
+        # Ensure related records exist so templates do not error
+        DesignerProfile.objects.get_or_create(user=user)
+
+        # Ensure a subscription exists (default free trial if missing)
+        if not hasattr(user, "subscription"):
+            trial_end = timezone.now() + timedelta(days=7)
+            UserSubscription.objects.create(
+                user=user,
+                plan=None,
+                status="free_trial",
+                payment_method=None,
+                trial_end_date=trial_end,
+                next_billing_date=trial_end,
+            )
+
+        # Dashboard metrics and lists
+        user_designs_qs = Design.objects.filter(designer=user).order_by("-created_at")
+        recent_designs = list(user_designs_qs[:8])
+
+        context.update(
+            {
+                "current_section": "dashboard",
+                "total_designs": user_designs_qs.count(),
+                "total_collections": Collection.objects.count(),
+                "total_events": Event.objects.count(),
+                "user_designs": recent_designs,
+                "recent_designs": recent_designs,
+                "recent_collections": list(Collection.objects.order_by("-year", "name")[:5]),
+            }
+        )
+
+        return context
 
 class PendingDesignersView(ListView):
     template_name = "redym_portfolio/pending_designers.html"
@@ -239,16 +283,109 @@ def dashboard_view(request):
 
 @login_required
 def designer_designs_view(request):
-    return render(request, "redym_portfolio/designer_designs.html", {"current_section": "designs"})
+    # Ensure related records exist
+    DesignerProfile.objects.get_or_create(user=request.user)
+    if not hasattr(request.user, "subscription"):
+        trial_end = timezone.now() + timedelta(days=7)
+        UserSubscription.objects.create(
+            user=request.user,
+            plan=None,
+            status="free_trial",
+            payment_method=None,
+            trial_end_date=trial_end,
+            next_billing_date=trial_end,
+        )
+
+    designs = Design.objects.filter(designer=request.user).order_by("-created_at")
+    available_years = (
+        designs.values_list("year", flat=True).distinct().order_by("-year")
+    )
+
+    return render(
+        request,
+        "redym_portfolio/designer_designs.html",
+        {
+            "current_section": "designs",
+            "designs": designs,
+            "available_years": available_years,
+        },
+    )
 
 @login_required
 def designer_design_create_view(request):
-    return render(request, "redym_portfolio/designer_design_create.html", {"current_section": "designs"})
+    # Ensure related records exist
+    DesignerProfile.objects.get_or_create(user=request.user)
+    if not hasattr(request.user, "subscription"):
+        trial_end = timezone.now() + timedelta(days=7)
+        UserSubscription.objects.create(
+            user=request.user,
+            plan=None,
+            status="free_trial",
+            payment_method=None,
+            trial_end_date=trial_end,
+            next_billing_date=trial_end,
+        )
+
+    return render(
+        request,
+        "redym_portfolio/designer_design_create.html",
+        {
+            "current_section": "designs",
+            "current_year": timezone.now().year,
+        },
+    )
 
 @login_required
 def designer_about_me_view(request):
-    return render(request, "redym_portfolio/designer_about_me.html", {"current_section": "about"})
+    profile, _ = DesignerProfile.objects.get_or_create(user=request.user)
+    if not hasattr(request.user, "subscription"):
+        trial_end = timezone.now() + timedelta(days=7)
+        UserSubscription.objects.create(
+            user=request.user,
+            plan=None,
+            status="free_trial",
+            payment_method=None,
+            trial_end_date=trial_end,
+            next_billing_date=trial_end,
+        )
+
+    return render(
+        request,
+        "redym_portfolio/designer_about_me.html",
+        {"current_section": "about", "designer_profile": profile},
+    )
 
 @login_required
 def designer_contact_view(request):
-    return render(request, "redym_portfolio/designer_contact.html", {"current_section": "contact"})
+    profile, _ = DesignerProfile.objects.get_or_create(user=request.user)
+    if not hasattr(request.user, "subscription"):
+        trial_end = timezone.now() + timedelta(days=7)
+        UserSubscription.objects.create(
+            user=request.user,
+            plan=None,
+            status="free_trial",
+            payment_method=None,
+            trial_end_date=trial_end,
+            next_billing_date=trial_end,
+        )
+
+    # Count non-empty social links for small stat
+    social_links_count = sum(
+        1
+        for value in [
+            getattr(profile, "portfolio_website", ""),
+            getattr(profile, "instagram_handle", ""),
+            getattr(profile, "linkedin_profile", ""),
+        ]
+        if value
+    )
+
+    return render(
+        request,
+        "redym_portfolio/designer_contact.html",
+        {
+            "current_section": "contact",
+            "designer_profile": profile,
+            "social_links_count": social_links_count,
+        },
+    )
