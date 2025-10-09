@@ -1,12 +1,27 @@
-﻿from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.views.generic import TemplateView, DetailView, ListView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import JsonResponse
+from .forms import DesignerSignUpForm
 
 def signup_view(request):
-    return render(request, "registration/signup.html", {})
+    if request.method == "POST":
+        form = DesignerSignUpForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(
+                request,
+                "Signup received! Your account will be reviewed and approved by an admin."
+            )
+            return redirect("login")
+        else:
+            messages.error(request, "Please correct the errors below.")
+    else:
+        form = DesignerSignUpForm()
+
+    return render(request, "registration/signup.html", {"form": form})
 
 # Basic view classes for URL compatibility
 class HomePageView(TemplateView):
