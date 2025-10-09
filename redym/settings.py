@@ -171,5 +171,9 @@ ADMIN_EMAIL = "chpreddy@gmail.com"
 
 LOGIN_REDIRECT_URL = "designer_dashboard"
 LOGOUT_REDIRECT_URL = "home"
+AUTHENTICATION_BACKENDS = [
+    "redym_portfolio.auth_backends.EmailOrUsernameModelBackend",
+    "django.contrib.auth.backends.ModelBackend",
+]
 DEBUG = os.getenv("DEBUG", "False") == "True"
-DEBUG=True
+DEBUG = True

@@ -24,7 +24,7 @@ Redym{% endblock %} {% block content %}
   <form method="post" style="display: flex; flex-direction: column; gap: 15px">
     {% csrf_token %}
 
-    <!-- Username Field -->
+    <!-- Username or Email Field -->
     <input
       type="text"
       name="username"
@@ -39,7 +39,7 @@ Redym{% endblock %} {% block content %}
         transition: all 0.3s ease;
         box-sizing: border-box;
       "
-      placeholder="Username"
+      placeholder="Username or Email"
       value="{{ form.username.value|default:'' }}"
     />
 
