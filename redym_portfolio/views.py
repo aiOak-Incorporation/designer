@@ -4,7 +4,16 @@ from django.contrib import messages
 from django.views.generic import TemplateView, DetailView, ListView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import JsonResponse
+from django.core.mail import send_mail
+from django.conf import settings
+from django.contrib.auth.models import User
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
+from django.utils import timezone
+from datetime import timedelta
+from django.db import transaction
 from .forms import DesignerSignUpForm
+from .models import DesignerProfile, SubscriptionPlan, UserSubscription
 
 def signup_view(request):
     if request.method == "POST":
@@ -55,8 +64,10 @@ class PendingDesignersView(ListView):
     template_name = "redym_portfolio/pending_designers.html"
 
 # ViewSets (minimal)
-from rest_framework import viewsets
+from rest_framework import viewsets, status
 from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework.permissions import AllowAny
 
 class BrandViewSet(viewsets.ViewSet):
     def list(self, request):
@@ -74,6 +85,102 @@ class EventViewSet(viewsets.ViewSet):
     def list(self, request):
         return Response([])
 
+# ---- API: Designer Registration ----
+class DesignerRegistrationView(APIView):
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    def post(self, request):
+        data = getattr(request, "data", {}) or {}
+        username = (data.get("username") or "").strip()
+        email = (data.get("email") or "").strip().lower()
+        password = data.get("password") or ""
+        subscription_plan = (data.get("subscription_plan") or "").strip()
+        payment_method = (data.get("payment_method") or "").strip()
+
+        errors = {}
+        if not username:
+            errors["username"] = "This field is required."
+        if not email:
+            errors["email"] = "This field is required."
+        if not password:
+            errors["password"] = "This field is required."
+        if User.objects.filter(username__iexact=username).exists():
+            errors["username"] = "Username is already taken."
+        if User.objects.filter(email__iexact=email).exists():
+            errors["email"] = "Email is already registered."
+
+        if not errors and password:
+            try:
+                validate_password(password)
+            except ValidationError as exc:
+                errors["password"] = list(exc.messages)
+
+        if errors:
+            return Response({"errors": errors}, status=status.HTTP_400_BAD_REQUEST)
+
+        with transaction.atomic():
+            user = User.objects.create_user(username=username, email=email, password=password)
+            # New designer accounts are inactive until approved by admin
+            user.is_active = False
+            user.save()
+
+            # Ensure a profile exists for template access patterns
+            DesignerProfile.objects.get_or_create(user=user)
+
+            # Create a default trial subscription
+            trial_days = 7
+            trial_end = timezone.now() + timedelta(days=trial_days)
+
+            plan_instance = None
+            if subscription_plan:
+                plan_instance = SubscriptionPlan.objects.filter(name=subscription_plan, is_active=True).first()
+
+            UserSubscription.objects.create(
+                user=user,
+                plan=plan_instance,
+                status="free_trial",
+                payment_method=payment_method if payment_method else None,
+                trial_end_date=trial_end,
+                next_billing_date=trial_end,
+            )
+
+            def send_registration_emails():
+                # Welcome email to designer
+                send_mail(
+                    subject="Welcome to Redym — Designer Registration Received",
+                    message=(
+                        f"Hello {username},\n\n"
+                        "Thanks for registering as a designer with Redym.\n"
+                        "Your account is pending admin approval. We will notify you as soon as it is active.\n\n"
+                        "Best,\nTeam Redym"
+                    ),
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[email],
+                    fail_silently=True,
+                )
+
+                # Internal notification email to owner
+                owner_email = getattr(settings, "ADMIN_EMAIL", None)
+                if owner_email:
+                    send_mail(
+                        subject="New Designer Registration — Review Needed",
+                        message=(
+                            "A new designer has registered and is pending approval.\n\n"
+                            f"Username: {username}\n"
+                            f"Email: {email}\n"
+                        ),
+                        from_email=settings.DEFAULT_FROM_EMAIL,
+                        recipient_list=[owner_email],
+                        fail_silently=True,
+                    )
+
+            transaction.on_commit(send_registration_emails)
+
+        return Response(
+            {"message": "Registration received. Your account is pending admin approval."},
+            status=status.HTTP_201_CREATED,
+        )
 # Placeholder functions
 def upload_design(request):
     return render(request, "redym_portfolio/upload_design.html", {})

@@ -16,6 +16,7 @@ from .views import (
     DesignerDashboardView, designer_designs_view, designer_design_create_view, 
     designer_design_edit_view, designer_design_delete_view, designer_design_detail_api,
     designer_about_me_view, designer_contact_view,
+    DesignerRegistrationView,
 )
 
 
@@ -59,6 +60,7 @@ urlpatterns = [
 
     # API
     path("api/", include(router.urls)),
+    path("api/designers/register/", DesignerRegistrationView.as_view(), name="designer_register_api"),
 
     # Admin actions
     path("admin/pending-designers/", PendingDesignersView.as_view(), name="pending_designers"),
