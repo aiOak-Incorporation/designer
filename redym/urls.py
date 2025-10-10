@@ -1,11 +1,14 @@
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, include, re_path
 from django.views.generic import TemplateView
 from django.contrib.auth import views as auth_views
+from django.views.generic.base import RedirectView
 from redym_portfolio.views import signup_view  # Import the signup_view
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    # Friendly alias: /login or /login/ -> accounts/login/ (preserve query string like ?next=)
+    re_path(r"^login/?$", RedirectView.as_view(pattern_name="login", permanent=False, query_string=True)),
     path("accounts/login/", auth_views.LoginView.as_view(template_name="registration/login.html"), name="login"),
     path("accounts/logout/", auth_views.LogoutView.as_view(), name="logout"),
     path("accounts/password_reset/", auth_views.PasswordResetView.as_view(), name="password_reset"),
