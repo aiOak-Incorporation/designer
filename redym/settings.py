@@ -133,26 +133,12 @@ USE_TZ = True
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# --- Caching + Sessions ---
-# Prefer Redis when a valid REDIS_URL is provided and its hostname resolves.
-# Fall back to DB-backed sessions and local-memory cache otherwise.
-redis_url = os.getenv("REDIS_URL", "").strip()
-redis_hostname = None
-if redis_url:
-    try:
-        redis_hostname = urlparse(redis_url).hostname
-    except Exception:
-        redis_hostname = None
+# --- Caching ---
+# Use Redis only when explicitly enabled to avoid DNS issues in environments
+# where a Redis hostname like "redym-redis" is not resolvable.
+USE_REDIS = os.getenv("USE_REDIS", "False") == "True"
 
-use_redis_cache = False
-if redis_hostname:
-    try:
-        socket.gethostbyname(redis_hostname)
-        use_redis_cache = True
-    except Exception:
-        use_redis_cache = False
-
-if use_redis_cache:
+if USE_REDIS:
     CACHES = {
         "default": {
             "BACKEND": "django_redis.cache.RedisCache",
@@ -161,7 +147,7 @@ if use_redis_cache:
                 "CLIENT_CLASS": "django_redis.client.DefaultClient",
                 "COMPRESSOR": "django_redis.compressors.zlib.ZlibCompressor",
             },
-            "TIMEOUT": 60 * 60,  # cache timeout = 1 hour
+            "TIMEOUT": 60 * 60,  # 1 hour
         }
     }
     # Use cache-backed sessions when Redis is available
@@ -175,6 +161,13 @@ else:
             "LOCATION": "unique-redym-cache",
         }
     }
+
+# --- Sessions ---
+if USE_REDIS:
+    SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+    SESSION_CACHE_ALIAS = "default"
+else:
+    # Store sessions in DB when Redis is disabled/missing
     SESSION_ENGINE = "django.contrib.sessions.backends.db"
 
 # --- Email ---
@@ -195,4 +188,3 @@ AUTHENTICATION_BACKENDS = [
     "django.contrib.auth.backends.ModelBackend",
 ]
 DEBUG = os.getenv("DEBUG", "False") == "True"
-DEBUG = True
