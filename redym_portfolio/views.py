@@ -67,13 +67,10 @@ class DesignListView(TemplateView):
 
 class DesignDetailView(DetailView):
     template_name = "redym_portfolio/design_detail.html"
-
 class EventListView(TemplateView):
     template_name = "redym_portfolio/events.html"
-
 class EventDetailView(DetailView):
     template_name = "redym_portfolio/event_detail.html"
-
 class DesignerDashboardView(LoginRequiredMixin, TemplateView):
     template_name = "redym_portfolio/designer_dashboard.html"
 
@@ -405,3 +402,8 @@ def designer_contact_view(request):
             "social_links_count": social_links_count,
         },
     )
+
+from django.contrib.auth import logout
+def logout_view(request):
+    logout(request)
+    return redirect('home')
