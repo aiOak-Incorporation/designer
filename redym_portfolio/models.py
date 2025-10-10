@@ -221,7 +221,7 @@ class RejectedDesigner(models.Model):
 # ---------------- Designer Profile ----------------
 class DesignerProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='designer_profile')
-    bio = models.TextField(max_length=1000, blank=True, help_text="Tell us about yourself and your design philosophy")
+    bio = models.TextField(max_length=1000, blank=True, default="", help_text="Tell us about yourself and your design philosophy")
     profile_image = models.ImageField(upload_to="designers/profiles/", blank=True, null=True)
     portfolio_website = models.URLField(blank=True, help_text="Your personal website or portfolio")
     instagram_handle = models.CharField(max_length=100, blank=True, help_text="Instagram username (without @)")
@@ -263,7 +263,7 @@ class SubscriptionPlan(models.Model):
     ]
     
     name = models.CharField(max_length=50, choices=PLAN_TYPES, unique=True)
-    display_name = models.CharField(max_length=100)
+    display_name = models.CharField(max_length=100, default="Standard Plan")
     price = models.DecimalField(max_digits=8, decimal_places=2)
     duration_days = models.IntegerField()  # Duration in days
     stripe_price_id = models.CharField(max_length=200, blank=True, null=True)
@@ -299,8 +299,8 @@ class UserSubscription(models.Model):
     payment_method = models.CharField(max_length=20, choices=PAYMENT_METHODS, blank=True, null=True)
     
     # Trial information
-    trial_start_date = models.DateTimeField(auto_now_add=True)
-    trial_end_date = models.DateTimeField()
+    trial_start_date = models.DateTimeField(null=True, blank=True)
+    trial_end_date = models.DateTimeField(null=True, blank=True)
     
     # Subscription information
     subscription_start_date = models.DateTimeField(null=True, blank=True)

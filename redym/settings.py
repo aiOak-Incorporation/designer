@@ -16,14 +16,22 @@ DEBUG = os.getenv("DEBUG", "False") == "True"
 ALLOWED_HOSTS = [
     "127.0.0.1",
     "localhost",
+    "designer.aioak.co",
+    "www.designer.aioak.co",
     "redym.aioak.co",
     "www.redym.aioak.co",
 ]
 
+
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')  
 CSRF_TRUSTED_ORIGINS = [
+    "https://designer.aioak.co",
+    "https://www.designer.aioak.co",
     "https://redym.aioak.co",
     "https://www.redym.aioak.co",
 ]
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
 
 # --- Apps ---
 INSTALLED_APPS = [

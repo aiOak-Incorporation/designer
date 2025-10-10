@@ -17,6 +17,7 @@ from .views import (
     designer_design_edit_view, designer_design_delete_view, designer_design_detail_api,
     designer_about_me_view, designer_contact_view,
     DesignerRegistrationView,
+    DesignersListView,
 )
 
 router = DefaultRouter()
@@ -33,6 +34,8 @@ urlpatterns = [
     path("collections/", CollectionsPageView.as_view(), name="collections"),
     path("collections/<slug:slug>/", CollectionDetailView.as_view(), name="collection_detail"),
     
+    # Designers
+    path("designers/", DesignersListView.as_view(), name="designers_list"),
     
     path("designs/upload/", upload_design, name="upload_design"),  # 👈 Move this ABOVE
     path("designs/", DesignListView.as_view(), name="design_list"),

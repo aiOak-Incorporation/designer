@@ -407,3 +407,15 @@ from django.contrib.auth import logout
 def logout_view(request):
     logout(request)
     return redirect('home')
+
+class DesignersListView(ListView):
+    model = DesignerProfile
+    template_name = "redym_portfolio/designers.html"
+    context_object_name = "designers"
+    paginate_by = 20
+
+    def get_queryset(self):
+        # Only return profiles for active users
+        return DesignerProfile.objects.filter(
+            user__is_active=True
+        ).select_related('user').order_by('-created_at')
