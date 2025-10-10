@@ -19,8 +19,6 @@ from .views import (
     DesignerRegistrationView,
 )
 
-
-
 router = DefaultRouter()
 router.register(r"brands", BrandViewSet, basename="brand")
 router.register(r"collections", CollectionViewSet, basename="collection")

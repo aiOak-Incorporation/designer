@@ -10,7 +10,7 @@ urlpatterns = [
     # Friendly alias: /login or /login/ -> accounts/login/ (preserve query string like ?next=)
     re_path(r"^login/?$", RedirectView.as_view(pattern_name="login", permanent=False, query_string=True)),
     path("accounts/login/", auth_views.LoginView.as_view(template_name="registration/login.html"), name="login"),
-    path("accounts/logout/", auth_views.LogoutView.as_view(), name="logout"),
+    path("accounts/logout/", auth_views.LogoutView.as_view(next_page="home"), name="logout"),
     path("accounts/password_reset/", auth_views.PasswordResetView.as_view(), name="password_reset"),
     path("accounts/", include("django.contrib.auth.urls")),  # includes reset/confirm/complete routes
     path("accounts/signup/", signup_view, name="signup"),
