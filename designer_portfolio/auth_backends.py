@@ -13,19 +13,17 @@ class EmailOrUsernameModelBackend(ModelBackend):
             return None
 
         UserModel = get_user_model()
-        try:
-            user = UserModel.objects.get(
-                Q(username__iexact=user_identifier) | Q(email__iexact=user_identifier)
-            )
-        except UserModel.MultipleObjectsReturned:
-            user = (
-                UserModel.objects.filter(
-                    Q(username__iexact=user_identifier) | Q(email__iexact=user_identifier)
-                ).first()
-            )
-        except UserModel.DoesNotExist:
-            return None
+        # Fetch all potential matches by username or email (case-insensitive)
+        candidate_users_qs = UserModel.objects.filter(
+            Q(username__iexact=user_identifier) | Q(email__iexact=user_identifier)
+        ).order_by("-is_active", "-last_login", "id")
 
-        if user and self.user_can_authenticate(user) and user.check_password(password):
-            return user
+        # Iterate all candidates and return the first whose password matches
+        for candidate_user in candidate_users_qs:
+            if not self.user_can_authenticate(candidate_user):
+                continue
+            if candidate_user.check_password(password):
+                return candidate_user
+
+        # No matching user/password combination found
         return None
