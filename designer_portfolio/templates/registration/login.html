@@ -14,6 +14,9 @@ designer{% endblock %} {% block content %}
   <h2 style="text-align: center; margin-bottom: 20px; color: #280768">
     Designer Login
   </h2>
+  <p style="text-align: center; color: #666; font-size: 14px; margin-top: -10px; margin-bottom: 10px;">
+    Please enter a correct username and password. Note that both fields may be case-sensitive.
+  </p>
 
   {% if form.errors or form.non_field_errors %}
   <div style="color: red; text-align: center; margin-bottom: 20px">
@@ -31,20 +34,22 @@ designer{% endblock %} {% block content %}
       {% endfor %}
     {% endif %}
     {% if not form.non_field_errors and not form.username.errors and not form.password.errors %}
-      <div>Invalid username or password. Please try again.</div>
+      <div>Please enter a correct username and password. Note that both fields may be case-sensitive.</div>
     {% endif %}
   </div>
   {% endif %}
 
-  <form method="post" style="display: flex; flex-direction: column; gap: 15px">
+  <form method="post" style="display: flex; flex-direction: column; gap: 15px" novalidate>
     {% csrf_token %}
 
     <!-- Username or Email Field -->
     <input
       type="text"
       name="username"
+      id="id_username"
       required
       maxlength="150"
+      autocomplete="username"
       style="
         width: 100%;
         padding: 14px;
@@ -59,21 +64,52 @@ designer{% endblock %} {% block content %}
     />
 
     <!-- Password Field -->
-    <input
-      type="password"
-      name="password"
-      required
-      style="
-        width: 100%;
-        padding: 14px;
-        border: 2px solid #e1e5e9;
-        border-radius: 8px;
-        font-size: 16px;
-        transition: all 0.3s ease;
-        box-sizing: border-box;
-      "
-      placeholder="Password"
-    />
+    <div style="position: relative">
+      <input
+        type="password"
+        name="password"
+        id="id_password"
+        required
+        autocomplete="current-password"
+        style="
+          width: 100%;
+          padding: 14px 44px 14px 14px;
+          border: 2px solid #e1e5e9;
+          border-radius: 8px;
+          font-size: 16px;
+          transition: all 0.3s ease;
+          box-sizing: border-box;
+        "
+        placeholder="Password"
+      />
+      <button
+        type="button"
+        id="togglePassword"
+        aria-label="Show password"
+        style="
+          position: absolute;
+          right: 10px;
+          top: 50%;
+          transform: translateY(-50%);
+          background: transparent;
+          border: none;
+          cursor: pointer;
+          color: #666;
+          font-weight: 600;
+        "
+      >Show</button>
+    </div>
+
+    <!-- Remember Me + Face Login Row -->
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px">
+      <label style="display: flex; align-items: center; gap: 8px; cursor: pointer">
+        <input type="checkbox" name="remember_me" id="id_remember_me" {% if form.remember_me.value %}checked{% else %}{% if form.remember_me.field.initial %}checked{% endif %}{% endif %} />
+        <span style="font-size: 14px; color: #333">Keep me signed in</span>
+      </label>
+      <button type="button" id="faceLoginBtn" style="background: #f5f5ff; color: #280768; border: 1px solid #dcd7f5; padding: 8px 12px; border-radius: 8px; font-size: 14px; cursor: pointer;">
+        Use Face/Passkey
+      </button>
+    </div>
 
     <button
       type="submit"
@@ -262,5 +298,39 @@ designer{% endblock %} {% block content %}
     }
   }
 </style>
+
+<script>
+  (function () {
+    const pwd = document.getElementById('id_password');
+    const toggle = document.getElementById('togglePassword');
+    if (pwd && toggle) {
+      toggle.addEventListener('click', function () {
+        const isHidden = pwd.getAttribute('type') === 'password';
+        pwd.setAttribute('type', isHidden ? 'text' : 'password');
+        toggle.textContent = isHidden ? 'Hide' : 'Show';
+        toggle.setAttribute('aria-label', isHidden ? 'Hide password' : 'Show password');
+      });
+    }
+
+    // Basic Passkey/Face Login stub using WebAuthn navigator.credentials.get
+    const faceBtn = document.getElementById('faceLoginBtn');
+    if (faceBtn && window.PublicKeyCredential) {
+      faceBtn.addEventListener('click', async function () {
+        try {
+          // Placeholder: In production, fetch challenge/options from server
+          // and call navigator.credentials.get({ publicKey: options }) then
+          // POST the assertion to a server endpoint for verification.
+          alert('Passkey/Face login coming soon. Your device supports WebAuthn.');
+        } catch (e) {
+          console.error(e);
+          alert('Passkey/Face login is not available right now.');
+        }
+      });
+    } else if (faceBtn) {
+      faceBtn.disabled = true;
+      faceBtn.title = 'Passkey not supported in this browser';
+    }
+  })();
+</script>
 
 {% endblock %}

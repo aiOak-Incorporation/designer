@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth.models import User
-from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.utils import timezone
 from datetime import timedelta
 from .models import SubscriptionPlan, UserSubscription, DesignerProfile
@@ -117,3 +117,37 @@ class DesignerSignUpForm(UserCreationForm):
         )
 
         return user
+
+
+class DesignerLoginForm(AuthenticationForm):
+    """Custom login form that adds a Remember Me option.
+
+    The view will read the remember_me field to control session expiry.
+    """
+
+    remember_me = forms.BooleanField(
+        required=False,
+        initial=True,
+        label="Keep me signed in",
+        help_text="Stay signed in on this device",
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Improve field widgets and placeholders
+        self.fields["username"].widget.attrs.update(
+            {
+                "class": "form-control",
+                "placeholder": "Username or Email",
+                "autocomplete": "username",
+            }
+        )
+        self.fields["password"].widget.attrs.update(
+            {
+                "class": "form-control",
+                "placeholder": "Password",
+                "autocomplete": "current-password",
+            }
+        )
+        # Lightweight styling hint for remember me checkbox
+        self.fields["remember_me"].widget.attrs.update({"class": "form-check-input"})
