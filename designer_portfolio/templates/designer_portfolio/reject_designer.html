@@ -1,0 +1,67 @@
+{% extends "designer_portfolio/base.html" %} {% block title %}Rejected Designers
+| designer{% endblock %} {% block content %}
+<div
+  style="
+    max-width: 800px;
+    margin: 40px auto;
+    padding: 20px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  "
+>
+  <h2 style="color: #b22222; margin-bottom: 20px">Rejected Designers</h2>
+
+  {% if rejected_designers %}
+  <table style="width: 100%; border-collapse: collapse">
+    <thead>
+      <tr style="background: #f8f8f8">
+        <th style="padding: 10px; border-bottom: 1px solid #ddd">Username</th>
+        <th style="padding: 10px; border-bottom: 1px solid #ddd">Email</th>
+        <th style="padding: 10px; border-bottom: 1px solid #ddd">Reason</th>
+        <th style="padding: 10px; border-bottom: 1px solid #ddd">
+          Rejected At
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for designer in rejected_designers %}
+      <tr>
+        <td style="padding: 10px; border-bottom: 1px solid #eee">
+          {{ designer.username }}
+        </td>
+        <td style="padding: 10px; border-bottom: 1px solid #eee">
+          {{ designer.email }}
+        </td>
+        <td style="padding: 10px; border-bottom: 1px solid #eee">
+          {{ designer.reason|default:"(No reason provided)" }}
+        </td>
+        <td style="padding: 10px; border-bottom: 1px solid #eee">
+          {{ designer.rejected_at|date:"Y-m-d H:i" }}
+        </td>
+        <td style="padding: 10px; border-bottom: 1px solid #eee">
+          <a
+            href="{% url 'reinstate_designer' designer.id %}"
+            style="
+              background: #4682b4;
+              color: #fff;
+              padding: 6px 12px;
+              border-radius: 4px;
+              text-decoration: none;
+            "
+            onclick="return confirm('Reinstate this designer account? They will return as pending approval.');"
+          >
+            🔄 Reinstate
+          </a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p style="text-align: center; color: gray">
+    No rejected designer accounts 🎉
+  </p>
+  {% endif %}
+</div>
+{% endblock %}

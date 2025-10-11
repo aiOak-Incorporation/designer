@@ -1,0 +1,399 @@
+{% load static %}
+<!-- HEADER -->
+<header class="header">
+  <div class="header__inner">
+    <!-- Logo -->
+    <a class="brand" href="{% url 'home' %}">
+      <img
+        class="brand__mark"
+        src="{% static 'images/brand/logo-maroon.png' %}"
+        alt="designer"
+      />
+    </a>
+
+    <!-- Mobile Menu Toggle -->
+    <button class="mobile-menu-toggle" aria-label="Toggle navigation">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+
+    <!-- Navigation -->
+    <nav class="nav">
+      <a href="{% url 'designers_list' %}">Designers</a>
+      <a href="{% url 'event_list' %}">Events</a>
+      <a href="{% url 'about' %}">About Me</a>
+      {% if user.is_authenticated %}
+      <a href="{% url 'designer_dashboard' %}">Dashboard</a>
+      <form action="{% url 'logout' %}" method="post" class="nav-logout-form">
+        {% csrf_token %}
+        <button type="submit" class="nav-logout-btn">Logout</button>
+      </form>
+      {% else %}
+      <a href="{% url 'login' %}">DesignerLogin</a>
+      {% endif %}
+    </nav>
+
+    <!-- Social Links -->
+    <div class="header__social">
+      <a
+        href="https://www.linkedin.com/in/manya-marri-8b434917a/"
+        target="_blank"
+        rel="noopener"
+        aria-label="LinkedIn"
+        ><i class="fab fa-linkedin-in"></i
+      ></a>
+      <a
+        href="https://www.instagram.com/runvolumeone/"
+        target="_blank"
+        rel="noopener"
+        aria-label="Instagram"
+        ><i class="fab fa-instagram"></i
+      ></a>
+      <a
+        href="https://mail.google.com/mail/?view=cm&fs=1&to=manya.marri@gmail.com"
+        aria-label="Gmail"
+        ><i class="fa-regular fa-envelope"></i
+      ></a>
+    </div>
+  </div>
+</header>
+
+<!-- Logo hover swap & Mobile menu functionality -->
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Logo hover swap
+    const logo = document.querySelector(".brand__mark");
+    const blackLogo = "{% static 'images/brand/logo-dark.png' %}";
+    const redLogo = "{% static 'images/brand/logo-maroon.png' %}";
+
+    logo.addEventListener("mouseenter", () => {
+      logo.src = redLogo;
+    });
+
+    logo.addEventListener("mouseleave", () => {
+      logo.src = blackLogo;
+    });
+
+    // Mobile menu toggle
+    const mobileToggle = document.querySelector(".mobile-menu-toggle");
+    const nav = document.querySelector(".nav");
+
+    if (mobileToggle && nav) {
+      mobileToggle.addEventListener("click", function () {
+        mobileToggle.classList.toggle("active");
+        nav.classList.toggle("active");
+      });
+
+      // Close mobile menu when clicking nav links
+      const navLinks = nav.querySelectorAll("a");
+      navLinks.forEach((link) => {
+        link.addEventListener("click", () => {
+          mobileToggle.classList.remove("active");
+          nav.classList.remove("active");
+        });
+      });
+
+      // Close mobile menu when clicking outside
+      document.addEventListener("click", function (event) {
+        if (
+          !mobileToggle.contains(event.target) &&
+          !nav.contains(event.target)
+        ) {
+          mobileToggle.classList.remove("active");
+          nav.classList.remove("active");
+        }
+      });
+    }
+  });
+</script>
+
+<style>
+  /* ===== Header Base Styles ===== */
+  .header {
+    background: #280768;
+    padding: 15px 30px;
+    color: #fff;
+    position: relative;
+  }
+
+  .header__inner {
+    max-width: 1800px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+  }
+
+  /* ===== Logo Styles ===== */
+  .brand__mark {
+    height: 50px;
+    transition: all 0.3s ease;
+  }
+
+  /* ===== Mobile Menu Toggle ===== */
+  .mobile-menu-toggle {
+    display: none;
+    flex-direction: column;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 5px;
+    z-index: 1001;
+  }
+
+  .mobile-menu-toggle span {
+    width: 25px;
+    height: 3px;
+    background: #fff;
+    margin: 3px 0;
+    transition: 0.3s;
+    border-radius: 2px;
+  }
+
+  .mobile-menu-toggle.active span:nth-child(1) {
+    transform: rotate(-45deg) translate(-5px, 6px);
+  }
+
+  .mobile-menu-toggle.active span:nth-child(2) {
+    opacity: 0;
+  }
+
+  .mobile-menu-toggle.active span:nth-child(3) {
+    transform: rotate(45deg) translate(-5px, -6px);
+  }
+
+  /* ===== Navigation Styles ===== */
+  .nav {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+  }
+
+  .nav a {
+    color: #fff;
+    text-decoration: none;
+    text-transform: uppercase;
+    font-weight: bold;
+    font-size: 14.9px;
+    letter-spacing: 0.5px;
+    padding: 8px 12px;
+    transition: color 0.3s ease;
+    white-space: nowrap;
+  }
+
+  .nav a:hover {
+    color: darkorange;
+  }
+
+  /* Logout button styling to match nav links */
+  .nav-logout-form {
+    display: inline;
+    margin: 0;
+  }
+
+  .nav-logout-btn {
+    background: none;
+    border: none;
+    color: #fff;
+    text-decoration: none;
+    text-transform: uppercase;
+    font-weight: bold;
+    font-size: 14.9px;
+    letter-spacing: 0.5px;
+    padding: 8px 12px;
+    transition: color 0.3s ease;
+    white-space: nowrap;
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  .nav-logout-btn:hover {
+    color: darkorange;
+  }
+
+  /* ===== Social Icons Styling ===== */
+  .header__social {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+  }
+
+  .header__social a {
+    width: 42px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #fff;
+    border-radius: 50%;
+    color: #fff;
+    font-size: 18px;
+    transition: all 0.3s ease;
+  }
+
+  .header__social a:hover {
+    background: darkorange;
+    border-color: darkorange;
+    color: #fff;
+  }
+
+  /* ===== Responsive Design ===== */
+
+  /* Large screens - reduce nav spacing */
+  @media (max-width: 1200px) {
+    .nav {
+      gap: 10px;
+    }
+
+    .nav a {
+      font-size: 13px;
+      padding: 6px 8px;
+    }
+
+    .nav-logout-btn {
+      font-size: 13px;
+      padding: 6px 8px;
+    }
+
+    .header__social {
+      gap: 12px;
+    }
+
+    .header__social a {
+      width: 38px;
+      height: 38px;
+      font-size: 16px;
+    }
+  }
+
+  /* Medium screens - further reduce spacing */
+  @media (max-width: 1000px) {
+    .header {
+      padding: 15px 20px;
+    }
+
+    .nav {
+      gap: 8px;
+    }
+
+    .nav a {
+      font-size: 12px;
+      padding: 5px 6px;
+    }
+
+    .nav-logout-btn {
+      font-size: 12px;
+      padding: 5px 6px;
+    }
+
+    .brand__mark {
+      height: 45px;
+    }
+
+    .header__social {
+      gap: 10px;
+    }
+
+    .header__social a {
+      width: 35px;
+      height: 35px;
+      font-size: 15px;
+    }
+  }
+
+  /* Tablet and mobile screens */
+  @media (max-width: 768px) {
+    .header {
+      padding: 15px;
+    }
+
+    .mobile-menu-toggle {
+      display: flex;
+      order: 2;
+    }
+
+    .brand {
+      order: 1;
+    }
+
+    .header__social {
+      order: 3;
+      gap: 8px;
+    }
+
+    .header__social a {
+      width: 32px;
+      height: 32px;
+      font-size: 14px;
+    }
+
+    .nav {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: #280768;
+      flex-direction: column;
+      padding: 20px;
+      gap: 15px;
+      border-top: 1px solid rgba(255, 255, 255, 0.2);
+      transform: translateY(-100%);
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+      z-index: 1000;
+    }
+
+    .nav.active {
+      transform: translateY(0);
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .nav a {
+      font-size: 16px;
+      padding: 10px 0;
+      text-align: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .nav-logout-btn {
+      font-size: 16px;
+      padding: 10px 0;
+      text-align: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      width: 100%;
+    }
+
+    .nav a:last-child {
+      border-bottom: none;
+    }
+
+    .brand__mark {
+      height: 40px;
+    }
+  }
+
+  /* Small mobile screens */
+  @media (max-width: 480px) {
+    .header {
+      padding: 10px 15px;
+    }
+
+    .header__social {
+      gap: 6px;
+    }
+
+    .header__social a {
+      width: 30px;
+      height: 30px;
+      font-size: 13px;
+    }
+
+    .brand__mark {
+      height: 35px;
+    }
+  }
+</style>

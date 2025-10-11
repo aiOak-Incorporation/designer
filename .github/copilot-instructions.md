@@ -1,13 +1,13 @@
-# REDYM Fashion Portfolio - AI Coding Guidelines
+# designer Fashion Portfolio - AI Coding Guidelines
 
 ## Project Architecture
 
-**REDYM** is a Django fashion portfolio platform for showcasing designer Manya's work. This is a single-app Django project with both web interface and REST API endpoints.
+**designer** is a Django fashion portfolio platform for showcasing designer Manya's work. This is a single-app Django project with both web interface and REST API endpoints.
 
 ### Core App Structure
 
-- **`redym/`** - Django project settings and main URL routing
-- **`redym_portfolio/`** - Main application containing all business logic
+- **`designer/`** - Django project settings and main URL routing
+- **`designer_portfolio/`** - Main application containing all business logic
 - **Database**: SQLite for local dev, configurable for Postgres in production via environment variables
 
 ### Key Models & Relationships
@@ -27,7 +27,7 @@ User (Django auth) + RejectedDesigner (tracks rejected signups)
 
 ### 1. Static Media Management
 
-- **Static files**: `redym_portfolio/static/` with subdirs `css/`, `images/`, `js/`, `swatches/`
+- **Static files**: `designer_portfolio/static/` with subdirs `css/`, `images/`, `js/`, `swatches/`
 - **Media uploads**: Models use specific upload paths like `collections/covers/`, `designs/gallery/`
 - **Helper function**: Use `utils.list_static_media(path)` for directory listings with automatic sorting
 - **Brand assets**: Logo switching logic in navbar uses `logo-maroon.png` and `logo-dark.png`
@@ -66,7 +66,7 @@ python manage.py collectstatic --noinput
 python manage.py runserver
 
 # Database seeding
-python manage.py loaddata redym_portfolio/fixtures/brand.json
+python manage.py loaddata designer_portfolio/fixtures/brand.json
 ```
 
 ## Environment Configuration

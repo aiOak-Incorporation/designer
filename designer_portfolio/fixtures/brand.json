@@ -1,0 +1,15 @@
+[
+  {
+    "model": "designer_portfolio.brand",
+    "pk": 1,
+    "fields": {
+      "name": "designer",
+      "tagline": "Whome Vision Meets Style",
+      "primary_color": "#000000",
+      "secondary_color": "#FFFFFF",
+      "accent_color": "#9CA3AF",
+      "primary_font": "Playfair Display",
+      "secondary_font": "Inter"
+    }
+  }
+]
