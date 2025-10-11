@@ -4,29 +4,23 @@
 <div class="upload-design-container" style="max-width:700px; margin:40px auto; padding:20px; background:#fff; border-radius:10px; box-shadow:0 2px 10px rgba(0,0,0,0.1);">
   <h2 style="margin-bottom:20px; text-align:center;">Upload New Design & Techpack</h2>
 
-  {% if messages %}
-  <ul class="messages">
-    {% for message in messages %}
-      <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
-    {% endfor %}
-  </ul>
-  {% endif %}
+  {# Intentionally removed transient flash messages to keep page clean #}
 
   <form method="post" enctype="multipart/form-data">
     {% csrf_token %}
 
-    <fieldset style="margin-bottom:25px;">
+    <fieldset disabled style="margin-bottom:25px; opacity:0.6;">
       <legend><strong>Design Details</strong></legend>
       {{ design_form.as_p }}
     </fieldset>
 
-    <fieldset style="margin-bottom:25px;">
+    <fieldset disabled style="margin-bottom:25px; opacity:0.6;">
       <legend><strong>Techpack Details</strong></legend>
       {{ techpack_form.as_p }}
     </fieldset>
 
     <div style="text-align:center;">
-      <button type="submit" style="background:#800000; color:#fff; padding:10px 20px; border:none; border-radius:5px; cursor:pointer;">
+      <button type="submit" disabled style="background:#800000; color:#fff; padding:10px 20px; border:none; border-radius:5px; cursor:not-allowed; opacity:0.6;">
         Upload
       </button>
     </div>
