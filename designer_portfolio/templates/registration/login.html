@@ -15,10 +15,25 @@ designer{% endblock %} {% block content %}
     Designer Login
   </h2>
 
-  {% if form.errors %}
-  <p style="color: red; text-align: center; margin-bottom: 20px">
-    Invalid username or password. Please try again.
-  </p>
+  {% if form.errors or form.non_field_errors %}
+  <div style="color: red; text-align: center; margin-bottom: 20px">
+    {% for error in form.non_field_errors %}
+      <div>{{ error }}</div>
+    {% endfor %}
+    {% if form.username.errors %}
+      {% for error in form.username.errors %}
+        <div>{{ error }}</div>
+      {% endfor %}
+    {% endif %}
+    {% if form.password.errors %}
+      {% for error in form.password.errors %}
+        <div>{{ error }}</div>
+      {% endfor %}
+    {% endif %}
+    {% if not form.non_field_errors and not form.username.errors and not form.password.errors %}
+      <div>Invalid username or password. Please try again.</div>
+    {% endif %}
+  </div>
   {% endif %}
 
   <form method="post" style="display: flex; flex-direction: column; gap: 15px">
