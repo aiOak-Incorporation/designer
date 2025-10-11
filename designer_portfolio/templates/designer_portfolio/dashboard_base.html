@@ -52,7 +52,7 @@
           >
             <i class="icon">🎨</i>
             <span>My Designs</span>
-            <span class="count">{{ user.designs.count }}</span>
+            <span class="count">{{ total_designs }}</span>
           </a>
         </li>
         <li class="nav-item">
@@ -124,7 +124,7 @@
           <div class="stat-card">
             <div class="stat-icon">🎨</div>
             <div class="stat-content">
-              <h3>{{ user.designs.count }}</h3>
+              <h3>{{ total_designs }}</h3>
               <p>Total Designs</p>
             </div>
           </div>
@@ -132,7 +132,7 @@
           <div class="stat-card">
             <div class="stat-icon">📋</div>
             <div class="stat-content">
-              <h3>{{ user.designs.filter(has_techpack=True).count }}</h3>
+              <h3>{{ designs_with_techpack_count }}</h3>
               <p>With Tech Packs</p>
             </div>
           </div>
@@ -148,7 +148,7 @@
           <div class="stat-card">
             <div class="stat-icon">⭐</div>
             <div class="stat-content">
-              <h3>{{ user.designs.filter(published=True).count }}</h3>
+              <h3>{{ published_designs_count }}</h3>
               <p>Published</p>
             </div>
           </div>
