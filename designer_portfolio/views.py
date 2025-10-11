@@ -33,7 +33,6 @@ def signup_view(request):
             user_auth = authenticate(request, username=user.username, password=raw_password)
             if user_auth is not None and user_auth.is_active:
                 login(request, user_auth)
-                messages.success(request, "Welcome! Your designer dashboard is ready.")
                 return redirect("designer_dashboard")
             messages.success(request, "Account created. Please log in.")
             return redirect("login")
