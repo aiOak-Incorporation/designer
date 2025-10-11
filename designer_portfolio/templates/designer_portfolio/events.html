@@ -1,60 +1,725 @@
-{% extends "designer_portfolio/base.html" %} {% block content %} {% include
-"designer_portfolio/includes/slideshow.html" %}
-<div
-  class="events-page"
-  style="max-width: 1000px; margin: 40px auto; padding: 20px"
->
-  <h1 style="text-align: center; margin-bottom: 30px">Events</h1>
+{% extends "designer_portfolio/base.html" %} {% load static %} {% block content
+%}
 
-  {% if events %}
-  <div
-    class="event-grid"
-    style="
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 20px;
-    "
-  >
-    {% for event in events %}
-    <div
-      class="event-card"
-      style="
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        overflow: hidden;
-        background: #fff;
-      "
-    >
-      {% if event.cover %}
-      <a href="{% url 'event_detail' event.slug %}">
+<!-- Hero Section with Events Slideshow -->
+<section class="events-hero">
+  <div class="hero-content">
+    <h1 class="hero-title">Fashion Events</h1>
+    <p class="hero-subtitle">
+      Discover Exclusive Fashion Shows, Designer Showcases & Industry Events
+    </p>
+  </div>
+
+  <!-- Events Image Slideshow -->
+  <div class="events-slideshow">
+    <div class="slideshow-container">
+      <div class="event-slide active">
         <img
-          src="{{ event.cover.url }}"
-          alt="{{ event.title }}"
-          style="width: 100%; height: 200px; object-fit: cover"
+          src="{% static 'images/events/fashion-week-slide.jpg' %}"
+          alt="Fashion Week 2025"
         />
-      </a>
-      {% endif %}
-      <div style="padding: 15px">
-        <h3>
-          <a
-            href="{% url 'event_detail' event.slug %}"
-            style="text-decoration: none; color: #333"
-          >
-            {{ event.title }}
-          </a>
-        </h3>
-        {% if event.event_date %}
-        <p><strong>Date:</strong> {{ event.event_date }}</p>
-        {% endif %}
-        <p style="font-size: 0.9em; color: #555">
-          {{ event.description|truncatewords:20 }}
-        </p>
+        <div class="slide-overlay">
+          <h3>Fashion Week 2025</h3>
+          <p>The most anticipated fashion event of the year</p>
+        </div>
+      </div>
+
+      <div class="event-slide">
+        <img
+          src="{% static 'images/events/designer-showcase-slide.jpg' %}"
+          alt="Designer Showcase"
+        />
+        <div class="slide-overlay">
+          <h3>Designer Showcase</h3>
+          <p>Emerging talent meets established designers</p>
+        </div>
+      </div>
+
+      <div class="event-slide">
+        <img
+          src="{% static 'images/events/sustainable-fashion-slide.jpg' %}"
+          alt="Sustainable Fashion Summit"
+        />
+        <div class="slide-overlay">
+          <h3>Sustainable Fashion Summit</h3>
+          <p>Exploring eco-friendly fashion innovations</p>
+        </div>
+      </div>
+
+      <div class="event-slide">
+        <img
+          src="{% static 'images/events/runway-show-slide.jpg' %}"
+          alt="Runway Show"
+        />
+        <div class="slide-overlay">
+          <h3>International Runway Show</h3>
+          <p>Global designers showcase their latest collections</p>
+        </div>
       </div>
     </div>
-    {% endfor %}
+
+    <!-- Navigation -->
+    <div class="slideshow-nav">
+      <button class="nav-btn prev" onclick="changeEventSlide(-1)">❮</button>
+      <button class="nav-btn next" onclick="changeEventSlide(1)">❯</button>
+    </div>
+
+    <div class="slideshow-dots">
+      <span class="dot active" onclick="currentEventSlide(1)"></span>
+      <span class="dot" onclick="currentEventSlide(2)"></span>
+      <span class="dot" onclick="currentEventSlide(3)"></span>
+      <span class="dot" onclick="currentEventSlide(4)"></span>
+    </div>
   </div>
-  {% else %}
-  <p>No events available yet.</p>
-  {% endif %}
-</div>
+</section>
+
+<!-- Featured Events List -->
+<section class="featured-events-list">
+  <div class="container">
+    <h2 class="section-title">Upcoming Events</h2>
+
+    <div class="events-grid">
+      {% if events %} {% for event in events %}
+      <article class="event-card">
+        {% if event.cover %}
+        <div class="event-image">
+          <a href="{% url 'event_detail' event.slug %}">
+            <img src="{{ event.cover.url }}" alt="{{ event.title }}" />
+          </a>
+          <div class="event-category">Fashion Show</div>
+        </div>
+        {% endif %}
+
+        <div class="event-info">
+          <div class="event-date-badge">
+            {% if event.event_date %} {{ event.event_date|date:"M d, Y" }} {%
+            else %} Coming Soon {% endif %}
+          </div>
+
+          <h3 class="event-title">
+            <a href="{% url 'event_detail' event.slug %}">{{ event.title }}</a>
+          </h3>
+
+          <p class="event-description">
+            {{ event.description|truncatewords:25 }}
+          </p>
+
+          <div class="event-meta">
+            <span class="event-location">📍 Fashion District</span>
+            <span class="event-time">🕒 7:00 PM</span>
+          </div>
+
+          <a href="{% url 'event_detail' event.slug %}" class="btn btn-primary"
+            >View Details</a
+          >
+        </div>
+      </article>
+      {% endfor %} {% else %}
+      <!-- Static event cards when no events exist -->
+      <article class="event-card">
+        <div class="event-image">
+          <img
+            src="{% static 'images/events/fashion-week-card.jpg' %}"
+            alt="Fashion Week 2025"
+          />
+          <div class="event-category">Fashion Week</div>
+        </div>
+        <div class="event-info">
+          <div class="event-date-badge">Mar 15-20, 2025</div>
+          <h3 class="event-title">Fashion Week 2025</h3>
+          <p class="event-description">
+            Join us for the most anticipated fashion event of the year featuring
+            emerging and established designers from around the world.
+          </p>
+          <div class="event-meta">
+            <span class="event-location">📍 Fashion District</span>
+            <span class="event-time">🕒 All Day</span>
+          </div>
+          <a href="#" class="btn btn-primary">View Details</a>
+        </div>
+      </article>
+
+      <article class="event-card">
+        <div class="event-image">
+          <img
+            src="{% static 'images/events/designer-showcase-card.jpg' %}"
+            alt="Designer Showcase"
+          />
+          <div class="event-category">Showcase</div>
+        </div>
+        <div class="event-info">
+          <div class="event-date-badge">Apr 5, 2025</div>
+          <h3 class="event-title">Designer Showcase</h3>
+          <p class="event-description">
+            Exclusive showcase featuring the latest collections from our
+            talented designers. Meet the creators behind innovative fashion.
+          </p>
+          <div class="event-meta">
+            <span class="event-location">📍 Design Gallery</span>
+            <span class="event-time">🕒 7:00 PM</span>
+          </div>
+          <a href="#" class="btn btn-primary">View Details</a>
+        </div>
+      </article>
+
+      <article class="event-card">
+        <div class="event-image">
+          <img
+            src="{% static 'images/events/sustainable-fashion-card.jpg' %}"
+            alt="Sustainable Fashion Summit"
+          />
+          <div class="event-category">Summit</div>
+        </div>
+        <div class="event-info">
+          <div class="event-date-badge">May 12, 2025</div>
+          <h3 class="event-title">Sustainable Fashion Summit</h3>
+          <p class="event-description">
+            Exploring eco-friendly fashion and sustainable design practices with
+            industry leaders and environmental experts.
+          </p>
+          <div class="event-meta">
+            <span class="event-location">📍 Convention Center</span>
+            <span class="event-time">🕒 9:00 AM</span>
+          </div>
+          <a href="#" class="btn btn-primary">View Details</a>
+        </div>
+      </article>
+
+      <article class="event-card">
+        <div class="event-image">
+          <img
+            src="{% static 'images/events/runway-show-card.jpg' %}"
+            alt="International Runway Show"
+          />
+          <div class="event-category">Runway</div>
+        </div>
+        <div class="event-info">
+          <div class="event-date-badge">Jun 8, 2025</div>
+          <h3 class="event-title">International Runway Show</h3>
+          <p class="event-description">
+            Global designers showcase their latest collections in an spectacular
+            runway show featuring avant-garde and contemporary fashion.
+          </p>
+          <div class="event-meta">
+            <span class="event-location">📍 Grand Theater</span>
+            <span class="event-time">🕒 8:00 PM</span>
+          </div>
+          <a href="#" class="btn btn-primary">View Details</a>
+        </div>
+      </article>
+
+      <article class="event-card">
+        <div class="event-image">
+          <img
+            src="{% static 'images/events/fashion-networking-card.jpg' %}"
+            alt="Fashion Networking Night"
+          />
+          <div class="event-category">Networking</div>
+        </div>
+        <div class="event-info">
+          <div class="event-date-badge">Jul 20, 2025</div>
+          <h3 class="event-title">Fashion Networking Night</h3>
+          <p class="event-description">
+            Connect with fashion industry professionals, designers, models, and
+            fashion enthusiasts in an exclusive networking event.
+          </p>
+          <div class="event-meta">
+            <span class="event-location">📍 Sky Lounge</span>
+            <span class="event-time">🕒 6:00 PM</span>
+          </div>
+          <a href="#" class="btn btn-primary">View Details</a>
+        </div>
+      </article>
+
+      <article class="event-card">
+        <div class="event-image">
+          <img
+            src="{% static 'images/events/fashion-awards-card.jpg' %}"
+            alt="Annual Fashion Awards"
+          />
+          <div class="event-category">Awards</div>
+        </div>
+        <div class="event-info">
+          <div class="event-date-badge">Dec 15, 2025</div>
+          <h3 class="event-title">Annual Fashion Awards</h3>
+          <p class="event-description">
+            Celebrating excellence in fashion design, recognizing outstanding
+            contributions from designers, models, and industry professionals.
+          </p>
+          <div class="event-meta">
+            <span class="event-location">📍 Grand Ballroom</span>
+            <span class="event-time">🕒 7:30 PM</span>
+          </div>
+          <a href="#" class="btn btn-primary">View Details</a>
+        </div>
+      </article>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+<!-- Related Links Section -->
+<section class="related-links">
+  <div class="container">
+    <h2 class="section-title">Explore More</h2>
+    <div class="links-grid">
+      <div class="link-card">
+        <div class="link-icon">👥</div>
+        <h3>Meet Our Designers</h3>
+        <p>Discover the talented designers behind these amazing events</p>
+        <a href="{% url 'designers_list' %}" class="btn btn-outline"
+          >View Designers</a
+        >
+      </div>
+
+      <div class="link-card">
+        <div class="link-icon">👗</div>
+        <h3>Fashion Collections</h3>
+        <p>Browse through our curated collections from featured events</p>
+        <a href="{% url 'collections' %}" class="btn btn-outline"
+          >View Collections</a
+        >
+      </div>
+
+      <div class="link-card">
+        <div class="link-icon">📅</div>
+        <h3>Event Calendar</h3>
+        <p>Stay updated with our complete events calendar</p>
+        <a href="#" class="btn btn-outline">View Calendar</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% endblock content %}
+
+{% block scripts %}
+<style>
+  /* Events Hero Section */
+  .events-hero {
+    background: linear-gradient(135deg, #280768 0%, #3d0a85 100%);
+    color: white;
+    padding: 60px 0 40px;
+    text-align: center;
+    position: relative;
+  }
+
+  .hero-content {
+    max-width: 800px;
+    margin: 0 auto 40px;
+    padding: 0 20px;
+  }
+
+  .hero-title {
+    font-size: clamp(2.5rem, 5vw, 4rem);
+    font-weight: 900;
+    margin-bottom: 20px;
+    background: linear-gradient(45deg, #fff, #ffa500);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero-subtitle {
+    font-size: 1.2rem;
+    opacity: 0.9;
+    margin-bottom: 0;
+  }
+
+  /* Events Slideshow */
+  .events-slideshow {
+    position: relative;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+  }
+
+  .slideshow-container {
+    position: relative;
+    overflow: hidden;
+    border-radius: 20px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    height: 500px;
+  }
+
+  .event-slide {
+    display: none;
+    position: relative;
+    width: 100%;
+    height: 100%;
+  }
+
+  .event-slide.active {
+    display: block;
+  }
+
+  .event-slide img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .slide-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+    color: white;
+    padding: 40px;
+    text-align: left;
+  }
+
+  .slide-overlay h3 {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
+
+  .slide-overlay p {
+    font-size: 1.1rem;
+    opacity: 0.9;
+  }
+
+  /* Container */
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+  }
+
+  /* Section Titles */
+  .section-title {
+    font-size: 2.5rem;
+    font-weight: 800;
+    text-align: center;
+    margin-bottom: 50px;
+    color: #280768;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  /* Slideshow Navigation */
+  .slideshow-nav {
+    position: absolute;
+    top: 50%;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    padding: 0 20px;
+    transform: translateY(-50%);
+  }
+
+  .nav-btn {
+    background: rgba(40, 7, 104, 0.8);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    font-size: 18px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .nav-btn:hover {
+    background: rgba(40, 7, 104, 1);
+    transform: scale(1.1);
+  }
+
+  .slideshow-dots {
+    text-align: center;
+    margin-top: 20px;
+  }
+
+  .dot {
+    height: 15px;
+    width: 15px;
+    margin: 0 5px;
+    background-color: rgba(255, 255, 255, 0.5);
+    border-radius: 50%;
+    display: inline-block;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .dot.active,
+  .dot:hover {
+    background-color: white;
+  }
+
+  /* Featured Events List */
+  .featured-events-list {
+    padding: 80px 0;
+    background: #f8f9fa;
+  }
+
+  .events-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+    gap: 30px;
+  }
+
+  .event-card {
+    background: white;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+  }
+
+  .event-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  }
+
+  .event-image {
+    position: relative;
+    height: 250px;
+    overflow: hidden;
+  }
+
+  .event-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+  }
+
+  .event-card:hover .event-image img {
+    transform: scale(1.1);
+  }
+
+  .event-category {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    background: rgba(40, 7, 104, 0.9);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .event-info {
+    padding: 30px;
+  }
+
+  .event-date-badge {
+    background: linear-gradient(135deg, #ffa500, #ff8c00);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    display: inline-block;
+    margin-bottom: 15px;
+  }
+
+  .event-title {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #280768;
+    margin-bottom: 15px;
+    line-height: 1.3;
+  }
+
+  .event-title a {
+    color: inherit;
+    text-decoration: none;
+    transition: color 0.3s ease;
+  }
+
+  .event-title a:hover {
+    color: #ffa500;
+  }
+
+  .event-description {
+    color: #666;
+    line-height: 1.6;
+    margin-bottom: 20px;
+  }
+
+  .event-meta {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 25px;
+    flex-wrap: wrap;
+  }
+
+  .event-location,
+  .event-time {
+    color: #888;
+    font-size: 0.9rem;
+  }
+
+  /* Buttons */
+  .btn {
+    padding: 12px 24px;
+    border-radius: 25px;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-block;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    border: none;
+    font-size: 0.9rem;
+    text-align: center;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #280768, #3d0a85);
+    color: white;
+  }
+
+  .btn-primary:hover {
+    background: linear-gradient(135deg, #1a0540, #280768);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(40, 7, 104, 0.3);
+  }
+
+  .btn-outline {
+    background: transparent;
+    color: #280768;
+    border: 2px solid #280768;
+  }
+
+  .btn-outline:hover {
+    background: #280768;
+    color: white;
+  }
+
+  /* Related Links Section */
+  .related-links {
+    padding: 80px 0;
+    background: white;
+  }
+
+  .links-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 40px;
+  }
+
+  .link-card {
+    text-align: center;
+    padding: 40px 30px;
+    border-radius: 20px;
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    transition: all 0.3s ease;
+  }
+
+  .link-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  }
+
+  .link-icon {
+    font-size: 3rem;
+    margin-bottom: 20px;
+  }
+
+  .link-card h3 {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #280768;
+    margin-bottom: 15px;
+  }
+
+  .link-card p {
+    color: #666;
+    margin-bottom: 25px;
+    line-height: 1.6;
+  }
+
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .slideshow-container {
+      height: 400px;
+    }
+
+    .slide-overlay {
+      padding: 20px;
+    }
+
+    .slide-overlay h3 {
+      font-size: 1.5rem;
+    }
+
+    .events-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .event-meta {
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .links-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .section-title {
+      font-size: 2rem;
+    }
+
+    .event-info {
+      padding: 20px;
+    }
+
+    .link-card {
+      padding: 30px 20px;
+    }
+  }
+</style>
+
+<script>
+  let eventSlideIndex = 1;
+
+  function changeEventSlide(n) {
+    showEventSlide((eventSlideIndex += n));
+  }
+
+  function currentEventSlide(n) {
+    showEventSlide((eventSlideIndex = n));
+  }
+
+  function showEventSlide(n) {
+    const slides = document.getElementsByClassName("event-slide");
+    const dots = document.getElementsByClassName("dot");
+
+    if (n > slides.length) {
+      eventSlideIndex = 1;
+    }
+    if (n < 1) {
+      eventSlideIndex = slides.length;
+    }
+
+    for (let i = 0; i < slides.length; i++) {
+      slides[i].classList.remove("active");
+    }
+
+    for (let i = 0; i < dots.length; i++) {
+      dots[i].classList.remove("active");
+    }
+
+    if (slides[eventSlideIndex - 1]) {
+      slides[eventSlideIndex - 1].classList.add("active");
+    }
+
+    if (dots[eventSlideIndex - 1]) {
+      dots[eventSlideIndex - 1].classList.add("active");
+    }
+  }
+
+  // Auto slide every 6 seconds
+  setInterval(() => {
+    changeEventSlide(1);
+  }, 6000);
+</script>
 {% endblock %}

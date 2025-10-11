@@ -14,5 +14,15 @@
     "viewsets",
     "VOLUMEONE",
     "Zimmermann"
-  ]
+  ],
+  "editor.formatOnSave": false,
+  "[html]": {
+    "editor.formatOnSave": false
+  },
+  "[django-html]": {
+    "editor.formatOnSave": false
+  },
+  "files.associations": {
+    "*.html": "django-html"
+  }
 }
