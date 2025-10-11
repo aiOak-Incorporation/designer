@@ -192,3 +192,6 @@ AUTHENTICATION_BACKENDS = [
     "django.contrib.auth.backends.ModelBackend",
 ]
 DEBUG = os.getenv("DEBUG", "False") == "True"
+
+# Custom session age when "Remember Me" is checked (default 30 days)
+REMEMBER_ME_SESSION_AGE = int(os.getenv("REMEMBER_ME_SESSION_AGE", 60 * 60 * 24 * 30))

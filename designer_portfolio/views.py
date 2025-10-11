@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.views.generic import TemplateView, DetailView, ListView
+from django.contrib.auth.views import LoginView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth import login, authenticate
 from django.http import JsonResponse
@@ -13,7 +14,7 @@ from django.core.exceptions import ValidationError
 from django.utils import timezone
 from datetime import timedelta
 from django.db import transaction
-from .forms import DesignerSignUpForm
+from .forms import DesignerSignUpForm, DesignerLoginForm
 from .models import (
     DesignerProfile,
     SubscriptionPlan,
@@ -419,3 +420,24 @@ class DesignersListView(ListView):
         return DesignerProfile.objects.filter(
             user__is_active=True
         ).select_related('user').order_by('-created_at')
+
+
+class DesignerLoginView(LoginView):
+    template_name = "registration/login.html"
+    authentication_form = DesignerLoginForm
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        remember_me = form.cleaned_data.get("remember_me")
+
+        # Control session expiry based on remember_me
+        # When remember_me is True, use a longer session age; otherwise expire at browser close
+        if remember_me:
+            # Use custom setting if provided; fallback to 30 days
+            session_age_seconds = getattr(settings, "REMEMBER_ME_SESSION_AGE", 60 * 60 * 24 * 30)
+            self.request.session.set_expiry(session_age_seconds)
+        else:
+            # 0 = expire at browser close
+            self.request.session.set_expiry(0)
+
+        return response
