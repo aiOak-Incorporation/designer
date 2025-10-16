@@ -11,6 +11,7 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
+from django.core.validators import URLValidator
 from django.utils import timezone
 from datetime import timedelta
 from django.db import transaction
@@ -30,6 +31,7 @@ def signup_view(request):
         # Attempt to restore an existing but inactive account based on username/email
         desired_username = (request.POST.get("username") or "").strip()
         email_input = (request.POST.get("email") or "").strip().lower()
+        website_url = (request.POST.get("website_url") or "").strip()
         password1 = request.POST.get("password1") or ""
         password2 = request.POST.get("password2") or ""
 
@@ -61,7 +63,16 @@ def signup_view(request):
                 inactive_user.save()
 
                 # Ensure related records exist
-                DesignerProfile.objects.get_or_create(user=inactive_user)
+                profile, _ = DesignerProfile.objects.get_or_create(user=inactive_user)
+                # Persist optional website URL if valid
+                if website_url:
+                    try:
+                        URLValidator()(website_url)
+                        profile.portfolio_website = website_url
+                        profile.save()
+                    except ValidationError:
+                        # Ignore invalid URL in restore path; do not block restore
+                        pass
                 if not hasattr(inactive_user, "subscription"):
                     trial_end = timezone.now() + timedelta(days=7)
                     UserSubscription.objects.create(
@@ -210,6 +221,7 @@ class DesignerRegistrationView(APIView):
         username = (data.get("username") or "").strip()
         email = (data.get("email") or "").strip().lower()
         password = data.get("password") or ""
+        website_url = (data.get("website_url") or data.get("portfolio_website") or "").strip()
         subscription_plan = (data.get("subscription_plan") or "").strip()
         payment_method = (data.get("payment_method") or "").strip()
 
@@ -242,7 +254,14 @@ class DesignerRegistrationView(APIView):
                 inactive_user.save()
 
                 # Ensure related records
-                DesignerProfile.objects.get_or_create(user=inactive_user)
+                profile, _ = DesignerProfile.objects.get_or_create(user=inactive_user)
+                if website_url:
+                    try:
+                        URLValidator()(website_url)
+                        profile.portfolio_website = website_url
+                        profile.save()
+                    except ValidationError:
+                        pass
                 if not hasattr(inactive_user, "subscription"):
                     trial_end = timezone.now() + timedelta(days=7)
                     plan_instance = None
@@ -292,7 +311,14 @@ class DesignerRegistrationView(APIView):
             user.save()
 
             # Ensure a profile exists for template access patterns
-            DesignerProfile.objects.get_or_create(user=user)
+            profile, _ = DesignerProfile.objects.get_or_create(user=user)
+            if website_url:
+                try:
+                    URLValidator()(website_url)
+                    profile.portfolio_website = website_url
+                    profile.save()
+                except ValidationError:
+                    pass
 
             # Create a default trial subscription
             trial_days = 7
