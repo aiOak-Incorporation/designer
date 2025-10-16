@@ -8,6 +8,13 @@ from .models import SubscriptionPlan, UserSubscription, DesignerProfile
 class DesignerSignUpForm(UserCreationForm):
     email = forms.EmailField(required=True)
 
+    # Optional portfolio website URL
+    website_url = forms.URLField(
+        required=False,
+        label="Portfolio website",
+        help_text="Add your website or portfolio link (optional)",
+    )
+
     # Subscription plan selection (by plan "name" string to match template radios)
     subscription_plan = forms.ChoiceField(
         choices=[('', 'Free Trial (1 Week)')] + SubscriptionPlan.PLAN_TYPES,
@@ -42,6 +49,7 @@ class DesignerSignUpForm(UserCreationForm):
         fields = (
             "username",
             "email",
+            "website_url",
             "password1",
             "password2",
             "subscription_plan",
@@ -61,6 +69,11 @@ class DesignerSignUpForm(UserCreationForm):
         self.fields["email"].widget.attrs.update({
             "class": "form-control",
             "placeholder": "Enter email address",
+        })
+        self.fields["website_url"].widget.attrs.update({
+            "class": "form-control",
+            "placeholder": "https://your-portfolio.example (optional)",
+            "autocomplete": "url",
         })
         self.fields["password1"].widget.attrs.update({
             "class": "form-control",
@@ -94,7 +107,13 @@ class DesignerSignUpForm(UserCreationForm):
             user.save()
 
         # Ensure a profile exists for template access patterns
-        DesignerProfile.objects.get_or_create(user=user)
+        profile, _ = DesignerProfile.objects.get_or_create(user=user)
+
+        # Persist optional website URL to profile
+        website_url: str = self.cleaned_data.get("website_url") or ""
+        if website_url:
+            profile.portfolio_website = website_url
+            profile.save()
 
         # Create a default trial subscription
         plan_name = self.cleaned_data.get("subscription_plan") or ""
