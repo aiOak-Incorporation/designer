@@ -83,7 +83,9 @@ ROOT_URLCONF = "designer.urls"
 
 # --- Static & Media ---
 STATIC_URL = "/static/"
-STATICFILES_DIRS = [BASE_DIR / "designer_portfolio" / "static"]
+# Do not include app static directories here; AppDirectoriesFinder already handles them.
+# Keeping this empty avoids duplicate collection of the same files.
+STATICFILES_DIRS = []
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # Use S3 for media in production to avoid losing uploads on deploys
