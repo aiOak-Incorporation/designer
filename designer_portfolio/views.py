@@ -14,6 +14,7 @@ from django.core.exceptions import ValidationError
 from django.utils import timezone
 from datetime import timedelta
 from django.db import transaction
+from django.db.models import Q
 from .forms import DesignerSignUpForm, DesignerLoginForm
 from .models import (
     DesignerProfile,
@@ -26,6 +27,63 @@ from .models import (
 
 def signup_view(request):
     if request.method == "POST":
+        # Attempt to restore an existing but inactive account based on username/email
+        desired_username = (request.POST.get("username") or "").strip()
+        email_input = (request.POST.get("email") or "").strip().lower()
+        password1 = request.POST.get("password1") or ""
+        password2 = request.POST.get("password2") or ""
+
+        if password1 and password1 == password2:
+            inactive_user = (
+                User.objects.filter(
+                    Q(is_active=False),
+                    Q(username__iexact=desired_username) | Q(email__iexact=email_input),
+                )
+                .order_by("id")
+                .first()
+            )
+
+            if inactive_user is not None:
+                # Validate password strength before restoring
+                try:
+                    validate_password(password1, user=inactive_user)
+                except ValidationError as exc:
+                    form = DesignerSignUpForm(request.POST)
+                    form.add_error("password1", exc)
+                    messages.error(request, "Please correct the errors below.")
+                    return render(request, "registration/signup.html", {"form": form})
+
+                # Restore user account
+                inactive_user.is_active = True
+                if email_input:
+                    inactive_user.email = email_input
+                inactive_user.set_password(password1)
+                inactive_user.save()
+
+                # Ensure related records exist
+                DesignerProfile.objects.get_or_create(user=inactive_user)
+                if not hasattr(inactive_user, "subscription"):
+                    trial_end = timezone.now() + timedelta(days=7)
+                    UserSubscription.objects.create(
+                        user=inactive_user,
+                        plan=None,
+                        status="free_trial",
+                        payment_method=None,
+                        trial_end_date=trial_end,
+                        next_billing_date=trial_end,
+                    )
+
+                # Log the user in using identifier they provided (email or username)
+                user_identifier = email_input or desired_username
+                user_auth = authenticate(request, username=user_identifier, password=password1)
+                if user_auth is not None and user_auth.is_active:
+                    login(request, user_auth)
+                    return redirect("designer_dashboard")
+
+                messages.success(request, "Account restored. Please log in.")
+                return redirect("login")
+
+        # Fall back to normal signup flow
         form = DesignerSignUpForm(request.POST)
         if form.is_valid():
             user = form.save()
@@ -154,6 +212,57 @@ class DesignerRegistrationView(APIView):
         password = data.get("password") or ""
         subscription_plan = (data.get("subscription_plan") or "").strip()
         payment_method = (data.get("payment_method") or "").strip()
+
+        # If a previously registered but inactive user exists, restore their account
+        if email or username:
+            inactive_user = (
+                User.objects.filter(
+                    Q(is_active=False), Q(username__iexact=username) | Q(email__iexact=email)
+                )
+                .order_by("id")
+                .first()
+            )
+            if inactive_user is not None:
+                errors = {}
+                if not password:
+                    errors["password"] = "This field is required."
+                else:
+                    try:
+                        validate_password(password, user=inactive_user)
+                    except ValidationError as exc:
+                        errors["password"] = list(exc.messages)
+
+                if errors:
+                    return Response({"errors": errors}, status=status.HTTP_400_BAD_REQUEST)
+
+                inactive_user.is_active = True
+                if email:
+                    inactive_user.email = email
+                inactive_user.set_password(password)
+                inactive_user.save()
+
+                # Ensure related records
+                DesignerProfile.objects.get_or_create(user=inactive_user)
+                if not hasattr(inactive_user, "subscription"):
+                    trial_end = timezone.now() + timedelta(days=7)
+                    plan_instance = None
+                    if subscription_plan:
+                        plan_instance = SubscriptionPlan.objects.filter(
+                            name=subscription_plan, is_active=True
+                        ).first()
+                    UserSubscription.objects.create(
+                        user=inactive_user,
+                        plan=plan_instance,
+                        status="free_trial",
+                        payment_method=payment_method if payment_method else None,
+                        trial_end_date=trial_end,
+                        next_billing_date=trial_end,
+                    )
+
+                return Response(
+                    {"message": "Account restored. You can now sign in."},
+                    status=status.HTTP_200_OK,
+                )
 
         errors = {}
         if not username:
