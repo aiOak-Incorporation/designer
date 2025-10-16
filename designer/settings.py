@@ -5,6 +5,7 @@ Django settings for designer project.
 from pathlib import Path
 import os
 import socket
+import warnings
 from urllib.parse import urlparse
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -85,11 +86,37 @@ STATIC_URL = "/static/"
 STATICFILES_DIRS = [BASE_DIR / "designer_portfolio" / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-# WhiteNoise: compression + cache busting
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+# Use S3 for media in production to avoid losing uploads on deploys
+USE_S3_MEDIA = os.getenv("USE_S3_MEDIA", "False") == "True"
 
-MEDIA_URL = "/media/"
-MEDIA_ROOT = BASE_DIR / "media"
+if USE_S3_MEDIA:
+    AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID", "")
+    AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY", "")
+    AWS_STORAGE_BUCKET_NAME = os.getenv("AWS_STORAGE_BUCKET_NAME", "")
+    AWS_S3_REGION_NAME = os.getenv("AWS_S3_REGION_NAME", None)
+    AWS_S3_CUSTOM_DOMAIN = os.getenv("AWS_S3_CUSTOM_DOMAIN", "")
+    AWS_S3_SIGNATURE_VERSION = os.getenv("AWS_S3_SIGNATURE_VERSION", "s3v4")
+    AWS_QUERYSTRING_AUTH = False
+
+    # Django 5 STORAGES API
+    STORAGES = {
+        "default": {"BACKEND": "designer.storages.MediaStorage"},
+        "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
+    }
+
+    if AWS_S3_CUSTOM_DOMAIN:
+        MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/media/"
+    else:
+        MEDIA_URL = f"https://{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com/media/"
+    MEDIA_ROOT = None  # S3 does not use local MEDIA_ROOT
+else:
+    # Local filesystem media (development)
+    STORAGES = {
+        "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+        "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
+    }
+    MEDIA_URL = "/media/"
+    MEDIA_ROOT = BASE_DIR / "media"
 
 # --- Templates ---
 TEMPLATES = [
@@ -111,17 +138,60 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "designer.wsgi.application"
 
-# --- Database (⚠️ set Postgres in .env for production) ---
-DATABASES = {
-    "default": {
-        "ENGINE": os.getenv("DB_ENGINE", "django.db.backends.sqlite3"),
-        "NAME": os.getenv("DB_NAME", BASE_DIR / "db.sqlite3"),
-        "USER": os.getenv("DB_USER", ""),
-        "PASSWORD": os.getenv("DB_PASSWORD", ""),
-        "HOST": os.getenv("DB_HOST", ""),
-        "PORT": os.getenv("DB_PORT", ""),
+# --- Database (Prefer DATABASE_URL for persistent DB in production) ---
+DATABASE_URL = os.getenv("DATABASE_URL") or os.getenv("DB_URL")
+
+def _db_settings_from_url(database_url: str):
+    parsed = urlparse(database_url)
+    scheme = (parsed.scheme or "").lower()
+
+    if scheme in {"postgres", "postgresql", "psql", "pgsql"}:
+        engine = "django.db.backends.postgresql"
+    elif scheme == "mysql":
+        engine = "django.db.backends.mysql"
+    elif scheme == "sqlite":
+        engine = "django.db.backends.sqlite3"
+    else:
+        raise ValueError(f"Unsupported DATABASE_URL scheme: {scheme}")
+
+    if engine.endswith("sqlite3"):
+        name = parsed.path or (BASE_DIR / "db.sqlite3")
+    else:
+        # strip leading slash in /dbname
+        name = parsed.path[1:] if parsed.path.startswith("/") else parsed.path
+
+    return {
+        "ENGINE": engine,
+        "NAME": str(name),
+        "USER": parsed.username or "",
+        "PASSWORD": parsed.password or "",
+        "HOST": parsed.hostname or "",
+        "PORT": parsed.port or "",
+        "CONN_MAX_AGE": int(os.getenv("DB_CONN_MAX_AGE", "60")),
     }
-}
+
+if DATABASE_URL:
+    DATABASES = {"default": _db_settings_from_url(DATABASE_URL)}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": os.getenv("DB_ENGINE", "django.db.backends.sqlite3"),
+            "NAME": os.getenv("DB_NAME", BASE_DIR / "db.sqlite3"),
+            "USER": os.getenv("DB_USER", ""),
+            "PASSWORD": os.getenv("DB_PASSWORD", ""),
+            "HOST": os.getenv("DB_HOST", ""),
+            "PORT": os.getenv("DB_PORT", ""),
+        }
+    }
+    if not str(DATABASES["default"]["NAME"]).endswith(".sqlite3"):
+        DATABASES["default"]["CONN_MAX_AGE"] = int(os.getenv("DB_CONN_MAX_AGE", "60"))
+
+# Warn loudly if SQLite is used while DEBUG=False (could lead to data loss in ephemeral envs)
+if not DEBUG and DATABASES["default"]["ENGINE"].endswith("sqlite3"):
+    warnings.warn(
+        "SQLite is configured while DEBUG=False. Configure a persistent database via DATABASE_URL to avoid data loss.",
+        RuntimeWarning,
+    )
 
 # --- Password validation ---
 AUTH_PASSWORD_VALIDATORS = [
@@ -143,6 +213,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # Use Redis only when explicitly enabled to avoid DNS issues in environments
 # where a Redis hostname like "designer-redis" is not resolvable.
 USE_REDIS = os.getenv("USE_REDIS", "False") == "True"
+redis_url = os.getenv("REDIS_URL") or os.getenv("CACHE_URL") or "redis://127.0.0.1:6379/1"
 
 if USE_REDIS:
     CACHES = {
