@@ -241,6 +241,19 @@ class DesignerProfile(models.Model):
     available_for_collaborations = models.BooleanField(default=True)
     contact_email = models.EmailField(blank=True, help_text="Public contact email (optional)")
     
+    # Portfolio template selection (applies default for all designers)
+    PORTFOLIO_TEMPLATES = [
+        ("classic", "Classic"),
+        ("modern", "Modern"),
+        ("minimal", "Minimal"),
+    ]
+    portfolio_template = models.CharField(
+        max_length=20,
+        choices=PORTFOLIO_TEMPLATES,
+        default="classic",
+        help_text="Select the default portfolio template style",
+    )
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
