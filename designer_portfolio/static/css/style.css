@@ -134,16 +134,16 @@ img {
 .slide.is-active {
   opacity: 1;
 }
-<style > .slide--1 {
-  background-image: url("{% static 'images/home/1.png' %}");
+.slide--1 {
+  background-image: url("../images/home/1.png");
 }
 .slide--2 {
-  background-image: url("{% static 'images/home/2.png' %}");
+  background-image: url("../images/home/2.png");
 }
 .slide--3 {
-  background-image: url("{% static 'images/home/3.png' %}");
+  background-image: url("../images/home/3.png");
 }
-</style > .dots {
+.dots {
   position: absolute;
   bottom: 10px;
   left: 50%;
