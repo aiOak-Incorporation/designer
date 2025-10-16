@@ -1,191 +1,94 @@
-{% extends "designer_portfolio/base.html" %} {% load static %} {% block content %}
+{% extends "designer_portfolio/base.html" %}
+{% load static %}
+{% block content %}
 <section class="about container">
-  <h1 class="page-title">About Me</h1>
+  <h1 class="page-title">About designer.aioak.co</h1>
 
   <div class="about-container">
-    <!-- Profile Image -->
-    <div class="profile-pic">
-      {% if about and about.profile_image %}
-      <img
-        src="{{ about.profile_image.url }}"
-        alt="Profile picture of {{ brand.name|default:'designer' }}"
-      />
-      {% else %}
-      <img
-        src="{% static 'images/profile-placeholder.png' %}"
-        alt="Profile picture"
-      />
-      {% endif %}
-    </div>
-
-    <!-- Contact Info -->
-    <div class="contact">
+    <div class="about-intro">
       <p>
-        <strong>Email:</strong>
-        <a
-          href="https://mail.google.com/mail/?view=cm&fs=1&to=manya.marri@gmail.com"
-          target="_blank"
-        >
-          manya.marri@gmail.com
-        </a>
-      </p>
-      <p>
-        <strong>Instagram:</strong>
-        <a href="https://www.instagram.com/runvolumeone/" target="_blank"
-          >https://www.instagram.com/runvolumeone/</a
-        >
-      </p>
-      <p>
-        <strong>LinkedIn:</strong>
-        <a
-          href="https://www.linkedin.com/in/manya-marri-8b434917a/"
-          target="_blank"
-          >https://www.linkedin.com/in/manya-marri-8b434917a/</a
-        >
+        <strong>designer.aioak.co</strong> is a community-driven platform that showcases
+        designers, their work, and events — helping creatives connect, collaborate,
+        and grow. The site makes it simple to discover designers, browse collections,
+        and reach out for opportunities.
       </p>
     </div>
   </div>
 
-  <!-- Bio -->
-  <div class="bio">
-    <p>
-      I’m <strong>Manya Reddy Marri</strong>, a fashion professional and
-      graduate of <strong>Arizona State University (ASU)</strong>, with a degree
-      in Fashion. Currently, I work as a <strong>Production Manager</strong> at
-      <strong>Emerald Sundae</strong> in Los Angeles, California, where I help
-      manage the full product lifecycle — from design development and sourcing
-      to production, quality assurance, and delivery.
-    </p>
-
-    <p>
-      With a background that bridges both design and production, I bring a
-      unique perspective that balances
-      <strong>creativity, craftsmanship, and operational efficiency</strong>. My
-      journey in fashion has been fueled by innovation, attention to detail, and
-      a passion for translating concepts into high-quality, market-ready
-      garments.
-    </p>
-  </div>
-
-  <!-- Skills -->
-  <h2 class="section-title">Skills & Tools</h2>
-  <ul class="skills">
-    <li>
-      <strong>Design Tools:</strong> Canva, Adobe Photoshop, Illustrator,
-      Fresco, FashionDraw
-    </li>
-    <li>
-      <strong>Technical:</strong> Styling, Sewing (hand & machine), Embroidery,
-      Crocheting, Technical Drawings, Production Planning
-    </li>
-    <li>
-      <strong>Management:</strong> Vendor Communication, Supply Chain
-      Coordination, Quality Control, Team Leadership
-    </li>
-    <li>
-      <strong>Creative Direction:</strong> Fashion Shoot Planning, Event
-      Coordination, Brand Development
-    </li>
-  </ul>
-
-  <!-- Experience -->
-  <h2 class="section-title">Experience</h2>
-  <ul class="experience">
-    <li>
-      <strong>Production Manager — Emerald Sundae, Los Angeles, CA</strong> —
-      Overseeing production processes, coordinating with vendors and suppliers,
-      ensuring quality standards, and managing timelines for a leading LA-based
-      fashion label.
-    </li>
-    <li>
-      <strong>VOLUMEONE Fashion Show 2024</strong> — Assisted backstage with
-      garment fittings, styling, and organization during high-pressure
-      productions.
-    </li>
-    <li>
-      <strong>Creative Assistant for Senior Collections</strong> — Supported
-      concept development and execution, strengthening teamwork, time
-      management, and production skills.
-    </li>
-  </ul>
-
-  <!-- Vision -->
-  <h2 class="section-title">Vision</h2>
+  <h2 class="section-title">Purpose</h2>
   <p>
-    My vision is to continue bridging the gap between
-    <strong>creative design and efficient production</strong>, ensuring that
-    every garment tells a story while meeting the highest industry standards. I
-    aim to collaborate with
-    <strong>forward-thinking brands, designers, and creatives</strong>
-    who value innovation, sustainability, and craftsmanship in fashion.
+    Our purpose is to amplify designers by giving them streamlined tools to present
+    their portfolios, share collections, list events, and be discovered by brands,
+    collaborators, and clients.
   </p>
+
+  <h2 class="section-title">How to Use</h2>
+  <ul class="usage">
+    <li><strong>Explore Designers:</strong> Browse the Designers page to find talent.</li>
+    <li><strong>View Collections:</strong> Dive into recent and past work.</li>
+    <li><strong>Check Events:</strong> Discover showcases, pop-ups, and runway shows.</li>
+    <li><strong>Contact:</strong> Reach out directly to collaborate or hire.</li>
+    <li><strong>Join:</strong> Designers can sign up and manage their profiles and designs.</li>
+  </ul>
+
+  <h2 class="section-title">Collaboration</h2>
+  <p>
+    We encourage collaboration between designers — from co-created capsules to
+    shared runway moments. The platform helps you find peers with complementary
+    skills and aesthetics.
+  </p>
+
+  <h2 class="section-title">Global Reach</h2>
+  <p>
+    Connect with designers from all over the world — spanning multiple regions and
+    at least 12 countries — and build relationships that cross borders and cultures.
+  </p>
+
+  <div class="cta">
+    <a class="cta-btn" href="{% url 'designers_list' %}">Discover Designers</a>
+    <a class="cta-btn secondary" href="{% url 'event_list' %}">Explore Events</a>
+  </div>
 </section>
 
 <style>
   .about.container {
     max-width: 900px;
-    margin: 5px auto;
-    padding: 0 10px;
+    margin: 16px auto;
+    padding: 0 16px;
     font-family: var(--font-body, Inter, sans-serif);
     color: #222;
-    line-height: 1.6;
+    line-height: 1.7;
   }
   .page-title {
-    font-size: 14px;
+    font-size: 18px;
     text-transform: uppercase;
     border-bottom: 2px solid #111;
-    margin-bottom: 15px;
-    padding-bottom: 4px;
+    margin-bottom: 16px;
+    padding-bottom: 6px;
     text-align: center;
   }
-  .about-container {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    margin-bottom: 20px;
-  }
-  .profile-pic img {
-    width: 180px;
-    height: 180px;
-    border-radius: 50%;
-    object-fit: cover;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  }
-  .contact p {
-    margin: 6px 0;
-  }
-  .contact a {
-    color: #800000;
-    text-decoration: none;
-  }
-  .contact a:hover {
-    text-decoration: underline;
-  }
+  .about-container { margin-bottom: 20px; }
   .section-title {
-    font-size: 10px;
-    font-weight: bold;
-    margin-top: 25px;
+    font-size: 12px;
+    font-weight: 700;
+    margin-top: 22px;
     margin-bottom: 10px;
     text-transform: uppercase;
+    letter-spacing: .5px;
   }
-  .skills,
-  .experience {
-    list-style: none;
-    padding-left: 0;
+  .usage { padding-left: 18px; }
+  .usage li { margin-bottom: 8px; }
+  .cta { margin-top: 24px; display: flex; gap: 12px; }
+  .cta-btn {
+    display: inline-block;
+    background: #280768;
+    color: #fff;
+    padding: 10px 14px;
+    text-decoration: none;
+    border-radius: 6px;
+    font-weight: 600;
   }
-  .skills li,
-  .experience li {
-    margin-bottom: 10px;
-  }
-  @media (max-width: 768px) {
-    .about-container {
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-    }
-    .contact {
-      text-align: center;
-    }
-  }
+  .cta-btn.secondary { background: darkorange; }
+  @media (max-width: 768px) { .cta { justify-content: center; flex-wrap: wrap; } }
 </style>
 {% endblock %}
