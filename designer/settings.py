@@ -103,6 +103,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "designer_portfolio.context_processors.dashboard_counts",
+                "designer_portfolio.context_processors.active_portfolio_template",
             ],
         },
     }

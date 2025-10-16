@@ -88,3 +88,40 @@ class EventAdmin(admin.ModelAdmin):
             )
         return "-"
     cover_preview.short_description = "Cover"
+
+
+# ---------------- Designer Profile ----------------
+@admin.register(m.DesignerProfile)
+class DesignerProfileAdmin(admin.ModelAdmin):
+    list_display = (
+        "user",
+        "specialization",
+        "location",
+        "portfolio_template",
+        "created_at",
+    )
+    list_filter = ("portfolio_template", "available_for_collaborations")
+    search_fields = (
+        "user__username",
+        "user__email",
+        "specialization",
+        "location",
+    )
+    readonly_fields = ("created_at", "updated_at")
+    fields = (
+        "user",
+        "bio",
+        "profile_image",
+        "portfolio_website",
+        "instagram_handle",
+        "linkedin_profile",
+        "years_of_experience",
+        "specialization",
+        "education",
+        "location",
+        "available_for_collaborations",
+        "contact_email",
+        "portfolio_template",
+        "created_at",
+        "updated_at",
+    )
