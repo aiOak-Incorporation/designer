@@ -300,6 +300,27 @@
         style="display: flex; flex-direction: column; gap: 12px"
       >
         <a
+          href="{% url 'designer_about_me' %}"
+          style="
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            background: #f8f9fa;
+            color: #333;
+            text-decoration: none;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+            transition: all 0.3s ease;
+          "
+        >
+          <i
+            class="fas fa-user-edit"
+            style="margin-right: 12px; font-size: 18px; color: #666"
+          ></i>
+          <span>Edit Profile / About Me</span>
+        </a>
+
+        <a
           href="{% url 'designer_design_create' %}"
           style="
             display: flex;

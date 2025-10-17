@@ -488,11 +488,14 @@ def designer_design_create_view(request):
 
 @login_required
 def designer_about_me_view(request):
-    profile, _ = DesignerProfile.objects.get_or_create(user=request.user)
-    if not hasattr(request.user, "subscription"):
+    user = request.user
+    profile, _ = DesignerProfile.objects.get_or_create(user=user)
+
+    # Ensure a subscription record exists (for templates using it)
+    if not hasattr(user, "subscription"):
         trial_end = timezone.now() + timedelta(days=7)
         UserSubscription.objects.create(
-            user=request.user,
+            user=user,
             plan=None,
             status="free_trial",
             payment_method=None,
@@ -500,10 +503,63 @@ def designer_about_me_view(request):
             next_billing_date=trial_end,
         )
 
+    if request.method == "POST":
+        # Update basic user fields
+        first_name = (request.POST.get("first_name") or user.first_name).strip()
+        last_name = (request.POST.get("last_name") or user.last_name).strip()
+        email = (request.POST.get("email") or user.email).strip()
+
+        user.first_name = first_name
+        user.last_name = last_name
+        user.email = email
+        user.save()
+
+        # Update profile fields (map template inputs to model fields)
+        profile.bio = request.POST.get("bio", profile.bio)
+        profile.location = request.POST.get("location", profile.location)
+        profile.education = request.POST.get("education", profile.education)
+        # years_of_experience may be empty; coerce safely
+        years_val = request.POST.get("years_of_experience", "").strip()
+        try:
+            profile.years_of_experience = int(years_val) if years_val != "" else profile.years_of_experience
+        except ValueError:
+            # leave unchanged on bad input
+            pass
+
+        # Social/portfolio links
+        profile.portfolio_website = request.POST.get("portfolio_website", request.POST.get("website", profile.portfolio_website))
+        profile.instagram_handle = request.POST.get("instagram_handle", request.POST.get("instagram", profile.instagram_handle))
+        profile.linkedin_profile = request.POST.get("linkedin_profile", request.POST.get("linkedin", profile.linkedin_profile))
+        profile.specialization = request.POST.get("specialization", request.POST.get("specializations", profile.specialization))
+        profile.contact_email = request.POST.get("contact_email", profile.contact_email)
+
+        # Collaboration preference (support old and corrected field names)
+        available_flag = request.POST.get("available_for_collaborations") or request.POST.get("available_for_collaboration")
+        profile.available_for_collaborations = bool(available_flag)
+
+        # Handle profile image upload
+        if "profile_image" in request.FILES:
+            profile.profile_image = request.FILES["profile_image"]
+
+        profile.save()
+
+        messages.success(request, "Your profile was updated successfully.")
+        return redirect("designer_about_me")
+
+    # Stats for header widgets
+    try:
+        total_designs = Design.objects.filter(designer=user).count()
+    except Exception:
+        total_designs = 0
+
     return render(
         request,
         "designer_portfolio/designer_about_me.html",
-        {"current_section": "about", "designer_profile": profile},
+        {
+            "current_section": "about",
+            "designer_profile": profile,
+            "total_designs": total_designs,
+        },
     )
 
 @login_required
