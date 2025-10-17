@@ -52,3 +52,21 @@ def active_portfolio_template(request: HttpRequest) -> dict:
         "portfolio_template_key": template_key,
         "portfolio_template_css": css_path,
     }
+
+
+def utm_context(request: HttpRequest) -> dict:
+    """Expose stored UTM and attribution values to templates.
+
+    Values are primarily sourced from the session, populated by UTMTrackingMiddleware.
+    """
+    utm = getattr(request, "utm", None) or request.session.get("utm", {}) or {}
+    return {
+        "utm": utm,
+        "utm_source": utm.get("utm_source", ""),
+        "utm_medium": utm.get("utm_medium", ""),
+        "utm_campaign": utm.get("utm_campaign", ""),
+        "utm_content": utm.get("utm_content", ""),
+        "utm_term": utm.get("utm_term", ""),
+        "utm_landing_page": utm.get("landing_page", ""),
+        "utm_initial_referrer": utm.get("initial_referrer", ""),
+    }

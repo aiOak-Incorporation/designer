@@ -72,6 +72,7 @@ MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",  # ✅ compressed static files
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "designer_portfolio.middleware.UTMTrackingMiddleware",  # ✅ capture UTM/session attribution
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -133,6 +134,7 @@ TEMPLATES = [
                 "django.contrib.messages.context_processors.messages",
                 "designer_portfolio.context_processors.dashboard_counts",
                 "designer_portfolio.context_processors.active_portfolio_template",
+                "designer_portfolio.context_processors.utm_context",  # ✅ expose UTM/session attribution
             ],
         },
     }
