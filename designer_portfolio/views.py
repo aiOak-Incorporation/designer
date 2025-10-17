@@ -125,6 +125,9 @@ class HomePageView(TemplateView):
 class AboutView(TemplateView):
     template_name = "designer_portfolio/about.html"
 
+class AboutSiteView(TemplateView):
+    template_name = "designer_portfolio/about_site.html"
+
 class CollectionsPageView(TemplateView):
     template_name = "designer_portfolio/collections.html"
 
