@@ -12,7 +12,7 @@ from .views import (
     upload_design,
     BrandViewSet, DesignViewSet, EventViewSet,
     PendingDesignersView, approve_designer, reject_designer, reinstate_designer,
-    AboutView,
+    AboutView, AboutSiteView,
     DesignerDashboardView, designer_designs_view, designer_design_create_view, 
     designer_design_edit_view, designer_design_delete_view, designer_design_detail_api,
     designer_about_me_view, designer_contact_view,
@@ -45,6 +45,7 @@ urlpatterns = [
     path("events/<slug:slug>/", EventDetailView.as_view(), name="event_detail"),
     
     path("about/", AboutView.as_view(), name="about"),   # ✅ fix added here
+    path("about-site/", AboutSiteView.as_view(), name="about_site"),
     
     # Designer Dashboard
     path("dashboard/", DesignerDashboardView.as_view(), name="designer_dashboard"),
