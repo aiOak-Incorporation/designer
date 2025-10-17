@@ -16,7 +16,12 @@ from django.utils import timezone
 from datetime import timedelta
 from django.db import transaction
 from django.db.models import Q
-from .forms import DesignerSignUpForm, DesignerLoginForm
+from .forms import (
+    DesignerSignUpForm,
+    DesignerLoginForm,
+    UserUpdateForm,
+    DesignerProfileForm,
+)
 from .models import (
     DesignerProfile,
     SubscriptionPlan,
@@ -500,10 +505,29 @@ def designer_about_me_view(request):
             next_billing_date=trial_end,
         )
 
+    if request.method == "POST":
+        user_form = UserUpdateForm(request.POST, instance=request.user)
+        profile_form = DesignerProfileForm(request.POST, request.FILES, instance=profile)
+        if user_form.is_valid() and profile_form.is_valid():
+            user_form.save()
+            profile_form.save()
+            messages.success(request, "Profile updated successfully.")
+            return redirect("designer_about_me")
+        else:
+            messages.error(request, "Please correct the errors below.")
+    else:
+        user_form = UserUpdateForm(instance=request.user)
+        profile_form = DesignerProfileForm(instance=profile)
+
     return render(
         request,
         "designer_portfolio/designer_about_me.html",
-        {"current_section": "about", "designer_profile": profile},
+        {
+            "current_section": "about",
+            "designer_profile": profile,
+            "user_form": user_form,
+            "profile_form": profile_form,
+        },
     )
 
 @login_required
@@ -519,6 +543,31 @@ def designer_contact_view(request):
             trial_end_date=trial_end,
             next_billing_date=trial_end,
         )
+
+    if request.method == "POST":
+        # Update basic user email
+        request.user.email = request.POST.get("email", request.user.email)
+        request.user.save(update_fields=["email"])
+
+        # Update allowed profile fields
+        updatable = {
+            "location": request.POST.get("location", profile.location or ""),
+            "portfolio_website": request.POST.get("website", profile.portfolio_website or ""),
+            "instagram_handle": request.POST.get("instagram", profile.instagram_handle or ""),
+            "linkedin_profile": request.POST.get("linkedin", profile.linkedin_profile or ""),
+            "contact_email": request.POST.get("email", profile.contact_email or ""),
+            "available_for_collaborations": "available_for_collaboration" in request.POST
+            or "available_for_collaborations" in request.POST,
+        }
+        for field_name, value in updatable.items():
+            setattr(profile, field_name, value)
+        try:
+            profile.save()
+            messages.success(request, "Contact information updated.")
+        except Exception:
+            messages.error(request, "Unable to save contact information.")
+
+        return redirect("designer_contact")
 
     # Count non-empty social links for small stat
     social_links_count = sum(

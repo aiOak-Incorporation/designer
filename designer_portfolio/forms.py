@@ -170,3 +170,72 @@ class DesignerLoginForm(AuthenticationForm):
         )
         # Lightweight styling hint for remember me checkbox
         self.fields["remember_me"].widget.attrs.update({"class": "form-check-input"})
+
+
+class UserUpdateForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ("first_name", "last_name", "email")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["first_name"].widget.attrs.update(
+            {"class": "form-control", "placeholder": "First name"}
+        )
+        self.fields["last_name"].widget.attrs.update(
+            {"class": "form-control", "placeholder": "Last name"}
+        )
+        self.fields["email"].widget.attrs.update(
+            {"class": "form-control", "placeholder": "Email address"}
+        )
+
+
+class DesignerProfileForm(forms.ModelForm):
+    class Meta:
+        model = DesignerProfile
+        fields = (
+            "bio",
+            "profile_image",
+            "portfolio_website",
+            "instagram_handle",
+            "linkedin_profile",
+            "years_of_experience",
+            "specialization",
+            "education",
+            "location",
+            "available_for_collaborations",
+            "contact_email",
+        )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Apply consistent styling
+        common_text_inputs = [
+            "bio",
+            "portfolio_website",
+            "instagram_handle",
+            "linkedin_profile",
+            "years_of_experience",
+            "specialization",
+            "education",
+            "location",
+            "contact_email",
+        ]
+        for field_name in common_text_inputs:
+            if field_name in self.fields:
+                self.fields[field_name].widget.attrs.update({"class": "form-control"})
+
+        # This screen does not edit template selection
+
+    def clean_instagram_handle(self):
+        handle = self.cleaned_data.get("instagram_handle", "").strip()
+        if handle.startswith("https://") or handle.startswith("http://"):
+            # If a URL is provided, try to extract the handle from the path
+            # e.g. https://instagram.com/username -> username
+            try:
+                handle = handle.rstrip("/").split("/")[-1]
+            except Exception:
+                pass
+        if handle.startswith("@"):
+            handle = handle[1:]
+        return handle
