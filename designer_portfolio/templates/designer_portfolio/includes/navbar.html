@@ -31,6 +31,7 @@
       </form>
       {% else %}
       <a href="{% url 'login' %}">DesignerLogin</a>
+      <a href="{% url 'signup' %}" class="nav-trial-cta" aria-label="Start 1-month free trial">Free Trial</a>
       {% endif %}
     </nav>
 
@@ -186,6 +187,17 @@
   .nav a:hover {
     color: darkorange;
   }
+
+  /* Free Trial CTA in nav */
+  .nav-trial-cta {
+    background: darkorange;
+    color: #1a0b4b !important;
+    padding: 8px 12px;
+    border-radius: 16px;
+    border: 1px solid rgba(0,0,0,0.08);
+    font-weight: 900;
+  }
+  .nav-trial-cta:hover { filter: brightness(0.95); }
 
   /* Logout button styling to match nav links */
   .nav-logout-form {
