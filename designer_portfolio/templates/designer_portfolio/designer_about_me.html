@@ -33,7 +33,7 @@
 
       <div class="profile-info">
         <h2>{{ user.get_full_name|default:user.username }}</h2>
-        <p class="profile-title">{{ designer_profile.professional_title|default:"Fashion Designer" }}</p>
+        <p class="profile-title">{{ designer_profile.specialization|default:"Fashion Designer" }}</p>
         <p class="profile-location">
           {% if designer_profile.location %}
             📍 {{ designer_profile.location }}
@@ -84,9 +84,9 @@
                    value="{{ user.email }}" class="form-control">
           </div>
           <div class="form-group">
-            <label for="id_phone">Phone Number</label>
-            <input type="tel" id="id_phone" name="phone" 
-                   value="{{ designer_profile.phone|default:'' }}" class="form-control">
+            <label for="id_contact_email">Public Contact Email</label>
+            <input type="email" id="id_contact_email" name="contact_email" 
+                   value="{{ designer_profile.contact_email|default:'' }}" class="form-control" placeholder="you@studio.com (optional)">
           </div>
         </div>
 
@@ -104,10 +104,10 @@
         
         <div class="form-row">
           <div class="form-group">
-            <label for="id_professional_title">Professional Title</label>
-            <input type="text" id="id_professional_title" name="professional_title" 
-                   value="{{ designer_profile.professional_title|default:'' }}" 
-                   placeholder="Fashion Designer, Creative Director, etc." class="form-control">
+            <label for="id_specialization">Specialization</label>
+            <input type="text" id="id_specialization" name="specialization" 
+                   value="{{ designer_profile.specialization|default:'' }}" 
+                   placeholder="Sustainable Fashion, Streetwear, Couture, etc." class="form-control">
           </div>
           <div class="form-group">
             <label for="id_years_of_experience">Years of Experience</label>
@@ -124,13 +124,7 @@
           <small class="form-text">Describe your design philosophy, experience, and what makes you unique.</small>
         </div>
 
-        <div class="form-group">
-          <label for="id_specializations">Specializations</label>
-          <input type="text" id="id_specializations" name="specializations" 
-                 value="{{ designer_profile.specializations|default:'' }}" 
-                 placeholder="Womenswear, Menswear, Accessories, etc." class="form-control">
-          <small class="form-text">Separate multiple specializations with commas.</small>
-        </div>
+        
 
         <div class="form-group">
           <label for="id_education">Education & Certifications</label>
@@ -145,48 +139,28 @@
         
         <div class="form-row">
           <div class="form-group">
-            <label for="id_website">Personal Website</label>
-            <input type="url" id="id_website" name="website" 
-                   value="{{ designer_profile.website|default:'' }}" 
+            <label for="id_portfolio_website">Portfolio Website</label>
+            <input type="url" id="id_portfolio_website" name="portfolio_website" 
+                   value="{{ designer_profile.portfolio_website|default:'' }}" 
                    placeholder="https://yourportfolio.com" class="form-control">
-          </div>
-          <div class="form-group">
-            <label for="id_portfolio_url">Portfolio URL</label>
-            <input type="url" id="id_portfolio_url" name="portfolio_url" 
-                   value="{{ designer_profile.portfolio_url|default:'' }}" 
-                   placeholder="https://behance.net/yourprofile" class="form-control">
           </div>
         </div>
 
         <div class="form-row">
           <div class="form-group">
-            <label for="id_instagram">Instagram</label>
-            <input type="text" id="id_instagram" name="instagram" 
-                   value="{{ designer_profile.instagram|default:'' }}" 
-                   placeholder="@yourusername" class="form-control">
+            <label for="id_instagram_handle">Instagram Handle</label>
+            <input type="text" id="id_instagram_handle" name="instagram_handle" 
+                   value="{{ designer_profile.instagram_handle|default:'' }}" 
+                   placeholder="yourusername (without @)" class="form-control">
           </div>
           <div class="form-group">
-            <label for="id_linkedin">LinkedIn</label>
-            <input type="url" id="id_linkedin" name="linkedin" 
-                   value="{{ designer_profile.linkedin|default:'' }}" 
+            <label for="id_linkedin_profile">LinkedIn Profile URL</label>
+            <input type="url" id="id_linkedin_profile" name="linkedin_profile" 
+                   value="{{ designer_profile.linkedin_profile|default:'' }}" 
                    placeholder="https://linkedin.com/in/yourprofile" class="form-control">
           </div>
         </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label for="id_pinterest">Pinterest</label>
-            <input type="url" id="id_pinterest" name="pinterest" 
-                   value="{{ designer_profile.pinterest|default:'' }}" 
-                   placeholder="https://pinterest.com/yourprofile" class="form-control">
-          </div>
-          <div class="form-group">
-            <label for="id_other_social">Other Social</label>
-            <input type="url" id="id_other_social" name="other_social" 
-                   value="{{ designer_profile.other_social|default:'' }}" 
-                   placeholder="https://dribbble.com/yourprofile" class="form-control">
-          </div>
-        </div>
+        
       </div>
 
       <!-- Contact Preferences Section -->
@@ -194,48 +168,13 @@
         <h3 class="section-title">Contact & Collaboration Preferences</h3>
         
         <div class="form-group">
-          <label for="id_preferred_contact_method">Preferred Contact Method</label>
-          <select id="id_preferred_contact_method" name="preferred_contact_method" class="form-control">
-            <option value="">Select preferred method</option>
-            <option value="email" {% if designer_profile.preferred_contact_method == 'email' %}selected{% endif %}>Email</option>
-            <option value="phone" {% if designer_profile.preferred_contact_method == 'phone' %}selected{% endif %}>Phone</option>
-            <option value="linkedin" {% if designer_profile.preferred_contact_method == 'linkedin' %}selected{% endif %}>LinkedIn</option>
-            <option value="instagram" {% if designer_profile.preferred_contact_method == 'instagram' %}selected{% endif %}>Instagram</option>
-          </select>
-        </div>
-
-        <div class="form-group">
           <label>Available for Collaborations</label>
           <div class="checkbox-group">
             <label class="checkbox-label">
-              <input type="checkbox" name="available_for_collaboration" value="true" 
-                     {% if designer_profile.available_for_collaboration %}checked{% endif %}>
+              <input type="checkbox" name="available_for_collaborations" value="true" 
+                     {% if designer_profile.available_for_collaborations %}checked{% endif %}>
               <span class="checkmark"></span>
               I'm open to collaboration opportunities
-            </label>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label>Collaboration Types</label>
-          <div class="checkbox-group">
-            <label class="checkbox-label">
-              <input type="checkbox" name="freelance_work" value="true" 
-                     {% if designer_profile.freelance_work %}checked{% endif %}>
-              <span class="checkmark"></span>
-              Freelance Design Work
-            </label>
-            <label class="checkbox-label">
-              <input type="checkbox" name="full_time_opportunities" value="true" 
-                     {% if designer_profile.full_time_opportunities %}checked{% endif %}>
-              <span class="checkmark"></span>
-              Full-time Opportunities
-            </label>
-            <label class="checkbox-label">
-              <input type="checkbox" name="consulting" value="true" 
-                     {% if designer_profile.consulting %}checked{% endif %}>
-              <span class="checkmark"></span>
-              Consulting & Advisory
             </label>
           </div>
         </div>
