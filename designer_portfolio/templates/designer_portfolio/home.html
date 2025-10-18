@@ -10,6 +10,7 @@
       Discover Exceptional Fashion Designers & Their Creative Journey
     </p>
     <div class="hero-cta">
+      <a href="{% url 'signup' %}" class="btn btn-accent" aria-label="Start 1-month free trial for designer collaboration">Start 1‑month free trial</a>
       <a href="{% url 'designers_list' %}" class="btn btn-primary"
         >Explore Designers</a
       >
@@ -275,6 +276,17 @@
     cursor: pointer;
     border: none;
     font-size: 1rem;
+  }
+
+  .btn-accent {
+    background: darkorange;
+    color: #1a0b4b;
+  }
+
+  .btn-accent:hover {
+    filter: brightness(0.95);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(255, 165, 0, 0.35);
   }
 
   .btn-primary {
