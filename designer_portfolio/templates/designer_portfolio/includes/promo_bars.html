@@ -1,168 +1,61 @@
-{% if not user.is_authenticated %}
-<div id="promo-bar-top" class="promo-bar promo-bar--top" role="region" aria-label="1-month free trial for designer collaboration">
-  <div class="promo-bar__inner">
-    <div class="promo-bar__marquee" aria-hidden="true">
-      <div class="promo-bar__track">
-        <span>🎉 1‑month free trial for designer collaboration — cancel anytime</span>
-        <span>🎉 1‑month free trial for designer collaboration — cancel anytime</span>
-        <span>🎉 1‑month free trial for designer collaboration — cancel anytime</span>
-        <span>🎉 1‑month free trial for designer collaboration — cancel anytime</span>
-      </div>
+<div class="promo-bar" role="region" aria-label="One-month free trial banner">
+  <div class="promo-marquee" aria-hidden="true">
+    <div class="promo-track">
+      <a href="{% url 'signup' %}" class="promo-item" aria-label="Start your one month free trial">
+        <span class="promo-emoji">🎉</span>
+        <span class="promo-text">One month free trial</span>
+        <span class="promo-cta">Start now</span>
+        <span class="promo-arrow">→</span>
+      </a>
+      <span class="promo-sep">•</span>
+      <a href="{% url 'signup' %}" class="promo-item" aria-label="Start your one month free trial">
+        <span class="promo-emoji">🎁</span>
+        <span class="promo-text">One month free trial</span>
+        <span class="promo-cta">Create your portfolio</span>
+        <span class="promo-arrow">→</span>
+      </a>
+      <span class="promo-sep">•</span>
+      <a href="{% url 'signup' %}" class="promo-item" aria-label="Start your one month free trial">
+        <span class="promo-emoji">✨</span>
+        <span class="promo-text">One month free trial</span>
+        <span class="promo-cta">No card required</span>
+        <span class="promo-arrow">→</span>
+      </a>
+      <span class="promo-sep">•</span>
+      <a href="{% url 'signup' %}" class="promo-item" aria-label="Start your one month free trial">
+        <span class="promo-emoji">🚀</span>
+        <span class="promo-text">One month free trial</span>
+        <span class="promo-cta">Publish designs today</span>
+        <span class="promo-arrow">→</span>
+      </a>
+      <span class="promo-sep">•</span>
+      <a href="{% url 'signup' %}" class="promo-item" aria-label="Start your one month free trial">
+        <span class="promo-emoji">🎉</span>
+        <span class="promo-text">One month free trial</span>
+        <span class="promo-cta">Start now</span>
+        <span class="promo-arrow">→</span>
+      </a>
+      <span class="promo-sep">•</span>
+      <a href="{% url 'signup' %}" class="promo-item" aria-label="Start your one month free trial">
+        <span class="promo-emoji">🎁</span>
+        <span class="promo-text">One month free trial</span>
+        <span class="promo-cta">Create your portfolio</span>
+        <span class="promo-arrow">→</span>
+      </a>
+      <span class="promo-sep">•</span>
+      <a href="{% url 'signup' %}" class="promo-item" aria-label="Start your one month free trial">
+        <span class="promo-emoji">✨</span>
+        <span class="promo-text">One month free trial</span>
+        <span class="promo-cta">No card required</span>
+        <span class="promo-arrow">→</span>
+      </a>
+      <span class="promo-sep">•</span>
+      <a href="{% url 'signup' %}" class="promo-item" aria-label="Start your one month free trial">
+        <span class="promo-emoji">🚀</span>
+        <span class="promo-text">One month free trial</span>
+        <span class="promo-cta">Publish designs today</span>
+        <span class="promo-arrow">→</span>
+      </a>
     </div>
-    <a class="promo-bar__cta" href="{% url 'signup' %}">Start free trial</a>
-    <button class="promo-bar__close" aria-label="Dismiss promotion">×</button>
-  </div>
-  
-  <style>
-    :root { --promo-height: 44px; }
-    .promo-bar {
-      position: fixed;
-      left: 0;
-      right: 0;
-      color: #fff;
-      z-index: 1100;
-      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-    }
-    .promo-bar--top {
-      top: 0;
-      background: #280768;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.15);
-      transform: translateY(-100%);
-      animation: promo-slide-down 400ms ease forwards;
-    }
-    .promo-bar--bottom {
-      bottom: 0;
-      background: #280768;
-      border-top: 1px solid rgba(255, 255, 255, 0.15);
-      transform: translateY(100%);
-      animation: promo-slide-up 400ms ease forwards 100ms;
-    }
-    .promo-bar__inner {
-      max-width: 1800px;
-      margin: 0 auto;
-      display: grid;
-      grid-template-columns: 1fr auto auto;
-      align-items: center;
-      gap: 12px;
-      padding: 8px 16px;
-      min-height: var(--promo-height);
-    }
-    .promo-bar__marquee { overflow: hidden; }
-    .promo-bar__track {
-      display: inline-flex;
-      gap: 48px;
-      white-space: nowrap;
-      will-change: transform;
-      opacity: 0.95;
-      animation: promo-marquee 22s linear infinite;
-    }
-    .promo-bar__cta {
-      background: darkorange;
-      color: #1a0b4b;
-      padding: 6px 12px;
-      border-radius: 16px;
-      text-decoration: none;
-      font-weight: 700;
-      text-transform: uppercase;
-      font-size: 12px;
-      letter-spacing: 0.5px;
-      border: 1px solid rgba(0, 0, 0, 0.08);
-      transition: filter 0.2s ease;
-    }
-    .promo-bar__cta:hover { filter: brightness(0.95); }
-    .promo-bar__close {
-      appearance: none;
-      background: transparent;
-      border: none;
-      color: #fff;
-      font-size: 18px;
-      line-height: 1;
-      width: 30px;
-      height: 30px;
-      border-radius: 50%;
-      cursor: pointer;
-      display: grid;
-      place-items: center;
-    }
-    .promo-bar--hidden { display: none !important; }
-
-    @keyframes promo-marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
-    @keyframes promo-slide-down { to { transform: translateY(0); } }
-    @keyframes promo-slide-up { to { transform: translateY(0); } }
-
-    @media (max-width: 768px) {
-      :root { --promo-height: 40px; }
-      .promo-bar__inner {
-        grid-template-columns: 1fr auto auto;
-        gap: 8px;
-        padding: 6px 10px;
-      }
-      .promo-bar__cta {
-        font-size: 11px;
-        padding: 6px 10px;
-      }
-    }
-  </style>
-</div>
-
-<div id="promo-bar-bottom" class="promo-bar promo-bar--bottom" role="region" aria-label="1-month free trial for designer collaboration">
-  <div class="promo-bar__inner">
-    <div class="promo-bar__marquee" aria-hidden="true">
-      <div class="promo-bar__track">
-        <span>Collaborate with top designers — first month free. Launch your portfolio.</span>
-        <span>Collaborate with top designers — first month free. Launch your portfolio.</span>
-        <span>Collaborate with top designers — first month free. Launch your portfolio.</span>
-        <span>Collaborate with top designers — first month free. Launch your portfolio.</span>
-      </div>
-    </div>
-    <a class="promo-bar__cta" href="{% url 'signup' %}">Start free trial</a>
-    <button class="promo-bar__close" aria-label="Dismiss promotion">×</button>
   </div>
 </div>
-
-<script>
-  (function () {
-    const TOP_KEY = 'promoTopDismissed';
-    const BOTTOM_KEY = 'promoBottomDismissed';
-    const topEl = document.getElementById('promo-bar-top');
-    const bottomEl = document.getElementById('promo-bar-bottom');
-
-    function isDismissed(key) {
-      try { return window.localStorage.getItem(key) === '1'; } catch (e) { return false; }
-    }
-    function setDismissed(key) {
-      try { window.localStorage.setItem(key, '1'); } catch (e) {}
-    }
-    function visible(el) { return el && !el.classList.contains('promo-bar--hidden'); }
-    function updateBodyOffsets() {
-      const topHeight = visible(topEl) ? topEl.offsetHeight : 0;
-      const bottomHeight = visible(bottomEl) ? bottomEl.offsetHeight : 0;
-      document.body.style.marginTop = topHeight ? (topHeight + 'px') : '';
-      document.body.style.marginBottom = bottomHeight ? (bottomHeight + 'px') : '';
-    }
-    function initBar(el, key) {
-      if (!el) return;
-      if (isDismissed(key)) {
-        el.classList.add('promo-bar--hidden');
-      }
-      const closeBtn = el.querySelector('.promo-bar__close');
-      if (closeBtn) {
-        closeBtn.addEventListener('click', function () {
-          setDismissed(key);
-          el.classList.add('promo-bar--hidden');
-          updateBodyOffsets();
-        });
-      }
-    }
-    function onReady(fn) {
-      if (document.readyState !== 'loading') { fn(); } else { document.addEventListener('DOMContentLoaded', fn); }
-    }
-    onReady(function () {
-      initBar(topEl, TOP_KEY);
-      initBar(bottomEl, BOTTOM_KEY);
-      updateBodyOffsets();
-      window.addEventListener('resize', updateBodyOffsets);
-    });
-  })();
-</script>
-{% endif %}
