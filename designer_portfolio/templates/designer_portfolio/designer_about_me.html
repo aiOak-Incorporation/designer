@@ -533,8 +533,16 @@ function resetForm() {
     
     // Reset image preview
     const profileImage = document.querySelector('.profile-image');
-    if (profileImage && '{{ designer_profile.profile_image.url }}') {
-      profileImage.src = '{{ designer_profile.profile_image.url }}';
+    const initialProfileImageUrl = "{% if designer_profile.profile_image %}{{ designer_profile.profile_image.url|escapejs }}{% else %}{% endif %}";
+    if (profileImage) {
+      if (initialProfileImageUrl) {
+        profileImage.src = initialProfileImageUrl;
+      } else {
+        const placeholder = document.createElement('div');
+        placeholder.className = 'profile-placeholder';
+        placeholder.innerHTML = '<i class="icon">👤</i>';
+        profileImage.parentNode.replaceChild(placeholder, profileImage);
+      }
     }
   }
 }
