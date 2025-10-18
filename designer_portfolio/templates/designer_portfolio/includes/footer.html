@@ -1,5 +1,7 @@
 <!-- Footer Promo Bar -->
+{% if not user.is_authenticated %}
 {% include "designer_portfolio/includes/promo_bars.html" %}
+{% endif %}
 
 <footer class="site-footer-light">
   <p>© designer · 2025 AIOAK Incorporation. All rights reserved.</p>

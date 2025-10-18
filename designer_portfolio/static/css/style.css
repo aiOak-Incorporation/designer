@@ -27,6 +27,20 @@ img {
   display: block;
 }
 
+/* ===== Utilities ===== */
+/* Visually hidden content, still accessible to screen readers */
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
 /* ===== Header ===== */
 .header {
   position: sticky;
@@ -512,6 +526,12 @@ img {
   opacity: 0.5;
 }
 
+/* Pause marquee when user hovers or focuses items for better UX */
+.promo-marquee:hover .promo-track,
+.promo-marquee:focus-within .promo-track {
+  animation-play-state: paused;
+}
+
 @keyframes promo-scroll {
   from {
     transform: translateX(0);
@@ -529,5 +549,12 @@ img {
   }
   .promo-text {
     font-size: 12px;
+  }
+}
+
+/* Respect user motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .promo-track {
+    animation: none;
   }
 }
