@@ -20,7 +20,9 @@
   </head>
   <body>
     <!-- Free Trial Promo Bars (top of all pages) -->
+    {% if not user.is_authenticated %}
     {% include "designer_portfolio/includes/promo_bars.html" %}
+    {% endif %}
     <!-- Navbar -->
     {% include "designer_portfolio/includes/navbar.html" %}
 
