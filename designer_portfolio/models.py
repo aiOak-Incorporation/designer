@@ -332,6 +332,15 @@ class UserSubscription(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
+    # Acquisition/Attribution (nullable, filled from UTM/session)
+    acquisition_source = models.CharField(max_length=100, blank=True, null=True)
+    acquisition_medium = models.CharField(max_length=100, blank=True, null=True)
+    acquisition_campaign = models.CharField(max_length=150, blank=True, null=True)
+    acquisition_content = models.CharField(max_length=150, blank=True, null=True)
+    acquisition_term = models.CharField(max_length=150, blank=True, null=True)
+    acquisition_landing_page = models.URLField(blank=True, null=True)
+    acquisition_initial_referrer = models.URLField(blank=True, null=True)
+    
     def __str__(self):
         return f"{self.user.username} - {self.status}"
     
