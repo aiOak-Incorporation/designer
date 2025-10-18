@@ -7,6 +7,7 @@ import os
 import socket
 import warnings
 from urllib.parse import urlparse
+from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -143,6 +144,7 @@ TEMPLATES = [
 WSGI_APPLICATION = "designer.wsgi.application"
 
 # --- Database (Prefer DATABASE_URL for persistent DB in production) ---
+ENV = (os.getenv("ENV") or "").lower()
 DATABASE_URL = os.getenv("DATABASE_URL") or os.getenv("DB_URL")
 
 def _db_settings_from_url(database_url: str):
@@ -177,21 +179,47 @@ def _db_settings_from_url(database_url: str):
 if DATABASE_URL:
     DATABASES = {"default": _db_settings_from_url(DATABASE_URL)}
 else:
+    # If DB_* variables are provided and DB_ENGINE is unset, infer Postgres by default.
+    configured_engine = os.getenv("DB_ENGINE")
+    db_host_env = os.getenv("DB_HOST", "")
+    db_name_env = os.getenv("DB_NAME", "")
+    db_user_env = os.getenv("DB_USER", "")
+
+    if not configured_engine:
+        if any([db_host_env, db_name_env, db_user_env]) or ENV in {"production", "prod", "staging"}:
+            configured_engine = "django.db.backends.postgresql"
+        else:
+            configured_engine = "django.db.backends.sqlite3"
+
+    default_name = (
+        str(BASE_DIR / "db.sqlite3") if configured_engine.endswith("sqlite3") else (db_name_env or "postgres")
+    )
+
     DATABASES = {
         "default": {
-            "ENGINE": os.getenv("DB_ENGINE", "django.db.backends.sqlite3"),
-            "NAME": os.getenv("DB_NAME", BASE_DIR / "db.sqlite3"),
+            "ENGINE": configured_engine,
+            "NAME": os.getenv("DB_NAME", default_name),
             "USER": os.getenv("DB_USER", ""),
             "PASSWORD": os.getenv("DB_PASSWORD", ""),
             "HOST": os.getenv("DB_HOST", ""),
             "PORT": os.getenv("DB_PORT", ""),
         }
     }
-    if not str(DATABASES["default"]["NAME"]).endswith(".sqlite3"):
+
+    if not str(DATABASES["default"]["ENGINE"]).endswith("sqlite3"):
         DATABASES["default"]["CONN_MAX_AGE"] = int(os.getenv("DB_CONN_MAX_AGE", "60"))
 
-# Warn loudly if SQLite is used while DEBUG=False (could lead to data loss in ephemeral envs)
-if not DEBUG and DATABASES["default"]["ENGINE"].endswith("sqlite3"):
+# Fail fast if SQLite is configured in production-like environments.
+engine_is_sqlite = DATABASES["default"]["ENGINE"].endswith("sqlite3")
+production_like = (ENV in {"production", "prod", "staging"}) or (not DEBUG)
+
+if production_like and engine_is_sqlite:
+    raise ImproperlyConfigured(
+        "SQLite is configured in a production-like environment. Set DATABASE_URL or Postgres DB_* env vars to use a persistent database."
+    )
+
+# Warn in any other non-debug scenario as an extra safeguard
+if not DEBUG and engine_is_sqlite:
     warnings.warn(
         "SQLite is configured while DEBUG=False. Configure a persistent database via DATABASE_URL to avoid data loss.",
         RuntimeWarning,
