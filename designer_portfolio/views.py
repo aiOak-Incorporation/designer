@@ -118,8 +118,19 @@ class HomePageView(TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Temporarily simplified to avoid potential model issues
-        context["designers"] = []
+        # Provide featured designers for the homepage slideshow.
+        # Currently: show the latest active designer profiles (up to 8).
+        # If curation is needed later, add a boolean flag on DesignerProfile and filter by it.
+        try:
+            designers_qs = (
+                DesignerProfile.objects.filter(user__is_active=True)
+                .select_related("user")
+                .order_by("-created_at")
+            )
+            context["designers"] = list(designers_qs[:8])
+        except Exception:
+            # Fallback to an empty list if the database or model is unavailable
+            context["designers"] = []
         return context
 
 class AboutView(TemplateView):
