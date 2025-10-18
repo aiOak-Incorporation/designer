@@ -179,17 +179,11 @@ def _db_settings_from_url(database_url: str):
 if DATABASE_URL:
     DATABASES = {"default": _db_settings_from_url(DATABASE_URL)}
 else:
-    # If DB_* variables are provided and DB_ENGINE is unset, infer Postgres by default.
-    configured_engine = os.getenv("DB_ENGINE")
+    # Default to SQLite unless DB_ENGINE is explicitly set.
+    configured_engine = os.getenv("DB_ENGINE") or "django.db.backends.sqlite3"
     db_host_env = os.getenv("DB_HOST", "")
     db_name_env = os.getenv("DB_NAME", "")
     db_user_env = os.getenv("DB_USER", "")
-
-    if not configured_engine:
-        if any([db_host_env, db_name_env, db_user_env]) or ENV in {"production", "prod", "staging"}:
-            configured_engine = "django.db.backends.postgresql"
-        else:
-            configured_engine = "django.db.backends.sqlite3"
 
     default_name = (
         str(BASE_DIR / "db.sqlite3") if configured_engine.endswith("sqlite3") else (db_name_env or "postgres")
@@ -211,7 +205,7 @@ else:
 
 # Fail fast if SQLite is configured in production-like environments.
 engine_is_sqlite = DATABASES["default"]["ENGINE"].endswith("sqlite3")
-production_like = (ENV in {"production", "prod", "staging"}) or (not DEBUG)
+production_like = (not DEBUG)
 
 if production_like and engine_is_sqlite:
     raise ImproperlyConfigured(
