@@ -1,64 +1,109 @@
-<div class="promo-bar" role="region" aria-label="One-month free trial banner">
+<div class="promo-bar" role="region" aria-label="One-month free trial slider">
   <p class="visually-hidden">
     Start your one‑month free trial. Create your portfolio. No card required. Publish designs today.
   </p>
-  <div class="promo-marquee" aria-hidden="true">
-    <div class="promo-track">
-      <a href="{% url 'signup' %}" class="promo-item" aria-label="Start your one month free trial">
+
+  <div class="promo-slider" data-autoplay="true" data-interval="4500">
+    <button class="promo-nav prev" aria-label="Previous announcement">‹</button>
+
+    <div class="promo-slides">
+      <a href="{% url 'signup' %}" class="promo-slide is-active" aria-label="Start your one month free trial">
         <span class="promo-emoji">🎉</span>
         <span class="promo-text">One month free trial</span>
         <span class="promo-cta">Start now</span>
         <span class="promo-arrow">→</span>
       </a>
-      <span class="promo-sep">•</span>
-      <a href="{% url 'signup' %}" class="promo-item" aria-label="Start your one month free trial">
+
+      <a href="{% url 'signup' %}" class="promo-slide" aria-label="Create your portfolio free for one month">
         <span class="promo-emoji">🎁</span>
         <span class="promo-text">One month free trial</span>
         <span class="promo-cta">Create your portfolio</span>
         <span class="promo-arrow">→</span>
       </a>
-      <span class="promo-sep">•</span>
-      <a href="{% url 'signup' %}" class="promo-item" aria-label="Start your one month free trial">
+
+      <a href="{% url 'signup' %}" class="promo-slide" aria-label="One month free trial with no card required">
         <span class="promo-emoji">✨</span>
         <span class="promo-text">One month free trial</span>
         <span class="promo-cta">No card required</span>
         <span class="promo-arrow">→</span>
       </a>
-      <span class="promo-sep">•</span>
-      <a href="{% url 'signup' %}" class="promo-item" aria-label="Start your one month free trial">
-        <span class="promo-emoji">🚀</span>
-        <span class="promo-text">One month free trial</span>
-        <span class="promo-cta">Publish designs today</span>
-        <span class="promo-arrow">→</span>
-      </a>
-      <span class="promo-sep">•</span>
-      <a href="{% url 'signup' %}" class="promo-item" aria-label="Start your one month free trial">
-        <span class="promo-emoji">🎉</span>
-        <span class="promo-text">One month free trial</span>
-        <span class="promo-cta">Start now</span>
-        <span class="promo-arrow">→</span>
-      </a>
-      <span class="promo-sep">•</span>
-      <a href="{% url 'signup' %}" class="promo-item" aria-label="Start your one month free trial">
-        <span class="promo-emoji">🎁</span>
-        <span class="promo-text">One month free trial</span>
-        <span class="promo-cta">Create your portfolio</span>
-        <span class="promo-arrow">→</span>
-      </a>
-      <span class="promo-sep">•</span>
-      <a href="{% url 'signup' %}" class="promo-item" aria-label="Start your one month free trial">
-        <span class="promo-emoji">✨</span>
-        <span class="promo-text">One month free trial</span>
-        <span class="promo-cta">No card required</span>
-        <span class="promo-arrow">→</span>
-      </a>
-      <span class="promo-sep">•</span>
-      <a href="{% url 'signup' %}" class="promo-item" aria-label="Start your one month free trial">
+
+      <a href="{% url 'signup' %}" class="promo-slide" aria-label="One month free trial publish designs today">
         <span class="promo-emoji">🚀</span>
         <span class="promo-text">One month free trial</span>
         <span class="promo-cta">Publish designs today</span>
         <span class="promo-arrow">→</span>
       </a>
     </div>
+
+    <button class="promo-nav next" aria-label="Next announcement">›</button>
+
+    <div class="promo-dots" role="tablist" aria-label="Promo slider pagination">
+      <button class="promo-dot is-active" role="tab" aria-selected="true" aria-label="Start now"></button>
+      <button class="promo-dot" role="tab" aria-selected="false" aria-label="Create your portfolio"></button>
+      <button class="promo-dot" role="tab" aria-selected="false" aria-label="No card required"></button>
+      <button class="promo-dot" role="tab" aria-selected="false" aria-label="Publish designs today"></button>
+    </div>
   </div>
 </div>
+
+<script>
+  (function () {
+    "use strict";
+
+    function enhancePromoSliders() {
+      var containers = document.querySelectorAll('.promo-slider');
+      var prefersReduced = false;
+      try {
+        prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      } catch (e) {}
+
+      containers.forEach(function (slider) {
+        if (slider.dataset.enhanced === 'true') return;
+        slider.dataset.enhanced = 'true';
+
+        var slides = slider.querySelectorAll('.promo-slide');
+        var dots = slider.querySelectorAll('.promo-dot');
+        var prev = slider.querySelector('.promo-nav.prev');
+        var next = slider.querySelector('.promo-nav.next');
+        var index = 0;
+        var timer = null;
+        var intervalMs = parseInt(slider.dataset.interval || '4500', 10);
+        var autoplay = (slider.dataset.autoplay !== 'false') && !prefersReduced;
+
+        function show(i) {
+          var total = slides.length;
+          if (!total) return;
+          i = (i % total + total) % total;
+          slides.forEach(function (s, idx) { s.classList.toggle('is-active', idx === i); });
+          dots.forEach(function (d, idx) {
+            var isActive = idx === i;
+            d.classList.toggle('is-active', isActive);
+            d.setAttribute('aria-selected', String(isActive));
+          });
+          index = i;
+        }
+
+        function stop() { if (timer) { clearInterval(timer); timer = null; } }
+        function start() { if (!autoplay) return; stop(); timer = setInterval(function () { show(index + 1); }, intervalMs); }
+
+        if (prev) prev.addEventListener('click', function () { show(index - 1); start(); });
+        if (next) next.addEventListener('click', function () { show(index + 1); start(); });
+        dots.forEach(function (d, idx) { d.addEventListener('click', function () { show(idx); start(); }); });
+
+        slider.addEventListener('mouseenter', stop);
+        slider.addEventListener('mouseleave', start);
+        slider.addEventListener('focusin', stop);
+        slider.addEventListener('focusout', start);
+
+        if (slides.length > 0) { show(0); start(); }
+      });
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', enhancePromoSliders);
+    } else {
+      enhancePromoSliders();
+    }
+  })();
+</script>

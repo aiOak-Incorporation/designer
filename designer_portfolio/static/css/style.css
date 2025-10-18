@@ -462,7 +462,7 @@ img {
   margin-top: 15px;
 }
 
-/* ===== Promo Bars (One-month free trial) ===== */
+/* ===== Promo Slider (One-month free trial) ===== */
 .promo-bar {
   width: 100%;
   background: linear-gradient(90deg, #280768, #3d0a85);
@@ -471,21 +471,27 @@ img {
   font-family: var(--font-body);
 }
 
-.promo-marquee {
-  overflow: hidden;
-  white-space: nowrap;
-}
-
-.promo-track {
-  display: inline-flex;
+.promo-slider {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
-  gap: 18px;
-  padding: 8px 12px;
-  animation: promo-scroll 28s linear infinite;
+  gap: 8px;
+  width: 100%;
+  max-width: var(--maxW);
+  margin: 0 auto;
+  padding: 6px 10px;
 }
 
-.promo-item {
-  display: inline-flex;
+.promo-slides {
+  position: relative;
+  overflow: hidden;
+  height: 38px; /* fixed height for smooth transitions */
+}
+
+.promo-slide {
+  position: absolute;
+  inset: 0;
+  display: flex;
   align-items: center;
   gap: 8px;
   color: #fff;
@@ -494,12 +500,14 @@ img {
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.15);
-  transition: transform 0.2s ease, background 0.2s ease;
+  transform: translateY(10%);
+  opacity: 0;
+  transition: opacity 300ms ease, transform 300ms ease;
 }
 
-.promo-item:hover {
-  transform: translateY(-1px);
-  background: rgba(255, 255, 255, 0.12);
+.promo-slide.is-active {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .promo-emoji {
@@ -522,39 +530,53 @@ img {
   opacity: 0.7;
 }
 
-.promo-sep {
-  opacity: 0.5;
+.promo-nav {
+  appearance: none;
+  border: 0;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
 }
 
-/* Pause marquee when user hovers or focuses items for better UX */
-.promo-marquee:hover .promo-track,
-.promo-marquee:focus-within .promo-track {
-  animation-play-state: paused;
+.promo-nav:hover,
+.promo-nav:focus {
+  background: gold;
+  color: #280768;
 }
 
-@keyframes promo-scroll {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(-50%);
-  }
+.promo-dots {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 4px 0 6px;
+}
+
+.promo-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+}
+
+.promo-dot.is-active {
+  background: #fff;
 }
 
 @media (max-width: 768px) {
-  .promo-track {
-    gap: 12px;
-    padding: 6px 8px;
-    animation-duration: 22s;
-  }
-  .promo-text {
-    font-size: 12px;
-  }
+  .promo-slides { height: 36px; }
+  .promo-text { font-size: 12px; }
 }
 
-/* Respect user motion preferences */
 @media (prefers-reduced-motion: reduce) {
-  .promo-track {
-    animation: none;
-  }
+  .promo-slide { transition: none; }
 }
