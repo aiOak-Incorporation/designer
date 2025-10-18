@@ -17,7 +17,7 @@ class DesignerSignUpForm(UserCreationForm):
 
     # Subscription plan selection (by plan "name" string to match template radios)
     subscription_plan = forms.ChoiceField(
-        choices=[('', 'Free Trial (1 Week)')] + SubscriptionPlan.PLAN_TYPES,
+        choices=[('', 'Free Trial (1 Month)')] + SubscriptionPlan.PLAN_TYPES,
         required=False,
         widget=forms.RadioSelect,
         help_text="Start with a free trial, then choose your subscription plan"
@@ -119,7 +119,7 @@ class DesignerSignUpForm(UserCreationForm):
         plan_name = self.cleaned_data.get("subscription_plan") or ""
         payment_method = self.cleaned_data.get("payment_method") or None
 
-        trial_days = 7
+        trial_days = 30
         trial_end = timezone.now() + timedelta(days=trial_days)
 
         plan_instance = None
