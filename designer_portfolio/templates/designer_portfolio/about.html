@@ -202,5 +202,18 @@
       text-align: center;
     }
   }
+
+  /* Larger screens - scale typography for readability */
+  @media (min-width: 1200px) {
+    .about.container { font-size: 1.05rem; }
+    .page-title { font-size: 20px; }
+    .section-title { font-size: 14px; }
+  }
+
+  @media (min-width: 1440px) {
+    .about.container { font-size: 1.1rem; }
+    .page-title { font-size: 22px; }
+    .section-title { font-size: 16px; }
+  }
 </style>
 {% endblock %}
