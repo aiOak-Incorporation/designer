@@ -74,7 +74,7 @@ def signup_view(request):
                         # Ignore invalid URL in restore path; do not block restore
                         pass
                 if not hasattr(inactive_user, "subscription"):
-                    trial_end = timezone.now() + timedelta(days=7)
+                    trial_end = timezone.now() + timedelta(days=30)
                     UserSubscription.objects.create(
                         user=inactive_user,
                         plan=None,
@@ -266,7 +266,7 @@ class DesignerRegistrationView(APIView):
                     except ValidationError:
                         pass
                 if not hasattr(inactive_user, "subscription"):
-                    trial_end = timezone.now() + timedelta(days=7)
+                    trial_end = timezone.now() + timedelta(days=30)
                     plan_instance = None
                     if subscription_plan:
                         plan_instance = SubscriptionPlan.objects.filter(
@@ -324,7 +324,7 @@ class DesignerRegistrationView(APIView):
                     pass
 
             # Create a default trial subscription
-            trial_days = 7
+            trial_days = 30
             trial_end = timezone.now() + timedelta(days=trial_days)
 
             plan_instance = None
@@ -437,7 +437,7 @@ def designer_designs_view(request):
     # Ensure related records exist
     DesignerProfile.objects.get_or_create(user=request.user)
     if not hasattr(request.user, "subscription"):
-        trial_end = timezone.now() + timedelta(days=7)
+        trial_end = timezone.now() + timedelta(days=30)
         UserSubscription.objects.create(
             user=request.user,
             plan=None,
@@ -467,7 +467,7 @@ def designer_design_create_view(request):
     # Ensure related records exist
     DesignerProfile.objects.get_or_create(user=request.user)
     if not hasattr(request.user, "subscription"):
-        trial_end = timezone.now() + timedelta(days=7)
+        trial_end = timezone.now() + timedelta(days=30)
         UserSubscription.objects.create(
             user=request.user,
             plan=None,
@@ -493,7 +493,7 @@ def designer_about_me_view(request):
 
     # Ensure a subscription record exists (for templates using it)
     if not hasattr(user, "subscription"):
-        trial_end = timezone.now() + timedelta(days=7)
+        trial_end = timezone.now() + timedelta(days=30)
         UserSubscription.objects.create(
             user=user,
             plan=None,
@@ -566,7 +566,7 @@ def designer_about_me_view(request):
 def designer_contact_view(request):
     profile, _ = DesignerProfile.objects.get_or_create(user=request.user)
     if not hasattr(request.user, "subscription"):
-        trial_end = timezone.now() + timedelta(days=7)
+        trial_end = timezone.now() + timedelta(days=30)
         UserSubscription.objects.create(
             user=request.user,
             plan=None,
