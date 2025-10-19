@@ -21,6 +21,12 @@ ALLOWED_HOSTS = [
     "designer.aioak.co",
     "www.designer.aioak.co",
 ]
+if os.getenv("ALLOWED_HOSTS"):
+    # Allow overriding via env (comma-separated)
+    ALLOWED_HOSTS = [h.strip() for h in os.getenv("ALLOWED_HOSTS").split(",") if h.strip()]
+if DEBUG:
+    # Allow Django test client and local dev hostnames
+    ALLOWED_HOSTS += ["testserver", "0.0.0.0"]
 
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')  
@@ -28,8 +34,30 @@ CSRF_TRUSTED_ORIGINS = [
     "https://designer.aioak.co",
     "https://www.designer.aioak.co",
 ]
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
+
+# In development (DEBUG=True), do not require HTTPS for cookies to allow local testing.
+# In production (DEBUG=False), default to secure cookies unless explicitly overridden.
+SESSION_COOKIE_SECURE = os.getenv(
+    "SESSION_COOKIE_SECURE",
+    "False" if DEBUG else "True",
+) == "True"
+CSRF_COOKIE_SECURE = os.getenv(
+    "CSRF_COOKIE_SECURE",
+    "False" if DEBUG else "True",
+) == "True"
+
+# Optionally enforce HTTPS redirects only in production by default
+SECURE_SSL_REDIRECT = os.getenv(
+    "SECURE_SSL_REDIRECT",
+    "False" if DEBUG else "True",
+) == "True"
+
+# Make local dev origins trusted for CSRF in DEBUG mode
+if DEBUG:
+    CSRF_TRUSTED_ORIGINS += [
+        "http://127.0.0.1:8000",
+        "http://localhost:8000",
+    ]
 
 # --- Apps ---
 INSTALLED_APPS = [
@@ -290,7 +318,7 @@ AUTHENTICATION_BACKENDS = [
     "designer_portfolio.auth_backends.EmailOrUsernameModelBackend",
     "django.contrib.auth.backends.ModelBackend",
 ]
-DEBUG = os.getenv("DEBUG", "False") == "True"
+
 
 # Custom session age when "Remember Me" is checked (default 30 days)
 REMEMBER_ME_SESSION_AGE = int(os.getenv("REMEMBER_ME_SESSION_AGE", 60 * 60 * 24 * 30))
