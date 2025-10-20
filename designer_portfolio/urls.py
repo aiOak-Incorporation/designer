@@ -61,8 +61,7 @@ urlpatterns = [
     path("dashephard/", RedirectView.as_view(pattern_name="designer_dashboard", permanent=False), name="dashephard"),
     path("dashepard/", RedirectView.as_view(pattern_name="designer_dashboard", permanent=False), name="dashepard"),
     
-    # Authenticated upload page
-    path("designs/upload/", upload_design, name="upload_design"),
+    
 
     # API
     path("api/", include(router.urls)),
