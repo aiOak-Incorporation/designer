@@ -6,6 +6,7 @@ from django.contrib.auth.views import LoginView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth import login, authenticate
 from django.http import JsonResponse
+from django.views.decorators.csrf import requires_csrf_token
 from django.core.mail import send_mail
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -645,3 +646,30 @@ class DesignerLoginView(LoginView):
             self.request.session.set_expiry(0)
 
         return response
+
+
+# --- Security/Errors ---
+@requires_csrf_token
+def csrf_failure(request, reason=""):
+    """Custom handler for CSRF failures.
+
+    Returns JSON for AJAX/JSON requests and a friendly HTML page otherwise.
+    """
+    accepts_header = (request.headers.get("Accept") or "").lower()
+    is_ajax = (request.headers.get("x-requested-with") or "").lower() == "xmlhttprequest"
+    wants_json = "application/json" in accepts_header
+
+    if is_ajax or wants_json:
+        payload = {
+            "error": "csrf_failed",
+            "message": "Your session expired or the form is stale. Please refresh the page and try again.",
+        }
+        if settings.DEBUG:
+            payload["reason"] = reason or ""
+        return JsonResponse(payload, status=403)
+
+    context = {
+        "reason": reason or "",
+        "debug": settings.DEBUG,
+    }
+    return render(request, "errors/403_csrf.html", context=context, status=403)
