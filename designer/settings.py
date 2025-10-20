@@ -177,6 +177,10 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "designer.wsgi.application"
 
+# --- CSRF ---
+# Use a custom failure view that returns friendlier HTML and JSON responses.
+CSRF_FAILURE_VIEW = "designer_portfolio.views.csrf_failure"
+
 # --- Database (Prefer DATABASE_URL for persistent DB in production) ---
 ENV = (os.getenv("ENV") or "").lower()
 DATABASE_URL = os.getenv("DATABASE_URL") or os.getenv("DB_URL")
