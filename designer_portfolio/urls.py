@@ -1,4 +1,5 @@
 from django.urls import path, include
+from django.views.generic.base import RedirectView
 from rest_framework.routers import DefaultRouter
 from . import views  # ✅ add this if you plan to call views.generate_techpack
 
@@ -56,6 +57,9 @@ urlpatterns = [
     path("dashboard/designs/<int:design_id>/details/", designer_design_detail_api, name="designer_design_detail_api"),
     path("dashboard/about-me/", designer_about_me_view, name="designer_about_me"),
     path("dashboard/contact/", designer_contact_view, name="designer_contact"),
+    # Common misspellings/legacy links -> redirect to dashboard
+    path("dashephard/", RedirectView.as_view(pattern_name="designer_dashboard", permanent=False), name="dashephard"),
+    path("dashepard/", RedirectView.as_view(pattern_name="designer_dashboard", permanent=False), name="dashepard"),
     
     # Authenticated upload page
     path("designs/upload/", upload_design, name="upload_design"),
