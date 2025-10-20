@@ -40,7 +40,8 @@ designer{% endblock %} {% block content %}
   {% endif %}
 
   <form method="post" style="display: flex; flex-direction: column; gap: 15px" novalidate>
-    {% csrf_token %}
+  {% csrf_token %}
+  <input type="hidden" name="next" value="{{ next }}" />
 
     <!-- Username or Email Field -->
     <input

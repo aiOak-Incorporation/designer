@@ -324,6 +324,7 @@ ADMIN_EMAIL = "chpreddy@gmail.com"
 
 LOGIN_REDIRECT_URL = "designer_dashboard"
 LOGOUT_REDIRECT_URL = "home"
+LOGIN_URL = "login"
 AUTHENTICATION_BACKENDS = [
     "designer_portfolio.auth_backends.EmailOrUsernameModelBackend",
     "django.contrib.auth.backends.ModelBackend",
