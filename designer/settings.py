@@ -133,6 +133,7 @@ if USE_S3_MEDIA:
     # Django 5 STORAGES API
     STORAGES = {
         "default": {"BACKEND": "designer.storages.MediaStorage"},
+        # staticfiles backend adjusted below based on DEBUG
         "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
     }
 
@@ -145,10 +146,15 @@ else:
     # Local filesystem media (development)
     STORAGES = {
         "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+        # staticfiles backend adjusted below based on DEBUG
         "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
     }
     MEDIA_URL = "/media/"
     MEDIA_ROOT = BASE_DIR / "media"
+
+# In DEBUG and test runs, avoid Manifest storage which requires collectstatic
+if DEBUG:
+    STORAGES["staticfiles"] = {"BACKEND": "whitenoise.storage.CompressedStaticFilesStorage"}
 
 # --- Templates ---
 TEMPLATES = [
