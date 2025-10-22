@@ -14,5 +14,7 @@ urlpatterns = [
     path("accounts/password_reset/", auth_views.PasswordResetView.as_view(), name="password_reset"),
     path("accounts/", include("django.contrib.auth.urls")),  # includes reset/confirm/complete routes
     path("accounts/signup/", signup_view, name="signup"),
+    # Social auth routes
+    path("auth/", include("social_django.urls", namespace="social")),
     path("", include("designer_portfolio.urls")),  # your app
 ]

@@ -165,36 +165,14 @@ designer{% endblock %} {% block content %}
     </div>
   </div>
 
-  <!-- Social Login Section - Coming Soon -->
-  <div
-    class="social-login-section"
-    style="margin-top: 20px; text-align: center"
-  >
-    <p style="margin-bottom: 15px; color: #666; font-size: 14px">
-      Social login coming soon!
-    </p>
-    <div
-      class="social-login-buttons"
-      style="display: flex; justify-content: center; gap: 15px"
-    >
-      <div
-        class="social-login-btn google disabled"
-        title="Google login - Coming Soon"
-      >
+  <!-- Social Login -->
+  <div class="social-login-section" style="margin-top: 20px; text-align: center">
+    <p style="margin-bottom: 15px; color: #666; font-size: 14px">Or continue with</p>
+    <div class="social-login-buttons" style="display: flex; justify-content: center; gap: 15px">
+      <a href="{% url 'social:begin' 'google-oauth2' %}{% if next %}?next={{ next|urlencode }}{% endif %}"
+         class="social-login-btn google" title="Sign in with Google" aria-label="Sign in with Google">
         <span>G</span>
-      </div>
-      <div
-        class="social-login-btn linkedin disabled"
-        title="LinkedIn login - Coming Soon"
-      >
-        <i class="fab fa-linkedin-in"></i>
-      </div>
-      <div
-        class="social-login-btn instagram disabled"
-        title="Instagram login - Coming Soon"
-      >
-        <i class="fab fa-instagram"></i>
-      </div>
+      </a>
     </div>
   </div>
 </div>
@@ -265,17 +243,7 @@ designer{% endblock %} {% block content %}
     border-color: #bc1888;
   }
 
-  /* Disabled state for social buttons */
-  .social-login-btn.disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    pointer-events: none;
-  }
-
-  .social-login-btn.disabled:hover {
-    transform: none;
-    box-shadow: none;
-  }
+  /* fine-tune */
 
   /* Login Actions Styling */
   .login-actions a:hover {
