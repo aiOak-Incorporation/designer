@@ -4,12 +4,20 @@ Django settings for designer project.
 
 from pathlib import Path
 import os
+from dotenv import load_dotenv
 import socket
 import warnings
 from urllib.parse import urlparse
 from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Load environment from .env.production if present (no override of existing env)
+_env_file = BASE_DIR / ".env.production"
+if _env_file.exists():
+    load_dotenv(dotenv_path=_env_file)
+else:
+    load_dotenv()
 
 # --- Core ---
 SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-change-this-in-production")
@@ -74,6 +82,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "drf_spectacular",
     "django_filters",
+    "social_django",
     
     # Local
     "designer_portfolio",
@@ -107,6 +116,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "social_django.middleware.SocialAuthExceptionMiddleware",
 ]
 
 ROOT_URLCONF = "designer.urls"
@@ -170,6 +180,8 @@ TEMPLATES = [
                 "designer_portfolio.context_processors.dashboard_counts",
                 "designer_portfolio.context_processors.active_portfolio_template",
                 "designer_portfolio.context_processors.utm_context",  # ✅ expose UTM/session attribution
+                "social_django.context_processors.backends",
+                "social_django.context_processors.login_redirect",
             ],
         },
     }
@@ -326,6 +338,7 @@ LOGIN_REDIRECT_URL = "designer_dashboard"
 LOGOUT_REDIRECT_URL = "home"
 LOGIN_URL = "login"
 AUTHENTICATION_BACKENDS = [
+    "social_core.backends.google.GoogleOAuth2",
     "designer_portfolio.auth_backends.EmailOrUsernameModelBackend",
     "django.contrib.auth.backends.ModelBackend",
 ]
@@ -333,3 +346,17 @@ AUTHENTICATION_BACKENDS = [
 
 # Custom session age when "Remember Me" is checked (default 30 days)
 REMEMBER_ME_SESSION_AGE = int(os.getenv("REMEMBER_ME_SESSION_AGE", 60 * 60 * 24 * 30))
+
+# --- Social Authentication (Google) ---
+SOCIAL_AUTH_URL_NAMESPACE = "social"
+# Force HTTPS redirects in non-debug environments (behind proxy, relies on SECURE_PROXY_SSL_HEADER)
+SOCIAL_AUTH_REDIRECT_IS_HTTPS = os.getenv("SOCIAL_AUTH_REDIRECT_IS_HTTPS", "False" if DEBUG else "True") == "True"
+
+# Credentials (from env). Prefer explicit SOCIAL_ vars, fallback to GOOGLE_* for convenience
+SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = os.getenv("SOCIAL_AUTH_GOOGLE_OAUTH2_KEY") or os.getenv("GOOGLE_CLIENT_ID", "")
+SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = os.getenv("SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET") or os.getenv("GOOGLE_CLIENT_SECRET", "")
+
+# Redirects for social auth
+SOCIAL_AUTH_LOGIN_REDIRECT_URL = "/dashboard/"
+SOCIAL_AUTH_LOGIN_ERROR_URL = "/accounts/login/"
+SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE = ["email", "profile"]
