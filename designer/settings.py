@@ -19,6 +19,10 @@ if _env_file.exists():
 else:
     load_dotenv()
 
+# Helpful flags derived from environment for consistent HTTPS behavior
+BASE_URL_SERVER = os.getenv("BASE_URL_SERVER", "")
+SERVER_URL_IS_HTTPS = BASE_URL_SERVER.lower().startswith("https://")
+
 # --- Core ---
 SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-change-this-in-production")
 DEBUG = os.getenv("DEBUG", "False") == "True"
@@ -43,21 +47,21 @@ CSRF_TRUSTED_ORIGINS = [
     "https://www.designer.aioak.co",
 ]
 
-# In development (DEBUG=True), do not require HTTPS for cookies to allow local testing.
-# In production (DEBUG=False), default to secure cookies unless explicitly overridden.
+# In development (DEBUG=True), do not require HTTPS for cookies to allow local testing,
+# unless the configured server URL is HTTPS (e.g., production .env but DEBUG left True).
 SESSION_COOKIE_SECURE = os.getenv(
     "SESSION_COOKIE_SECURE",
-    "False" if DEBUG else "True",
+    "True" if (not DEBUG or SERVER_URL_IS_HTTPS) else "False",
 ) == "True"
 CSRF_COOKIE_SECURE = os.getenv(
     "CSRF_COOKIE_SECURE",
-    "False" if DEBUG else "True",
+    "True" if (not DEBUG or SERVER_URL_IS_HTTPS) else "False",
 ) == "True"
 
-# Optionally enforce HTTPS redirects only in production by default
+# Enforce HTTPS redirects by default in production or when BASE_URL_SERVER is HTTPS
 SECURE_SSL_REDIRECT = os.getenv(
     "SECURE_SSL_REDIRECT",
-    "False" if DEBUG else "True",
+    "True" if (not DEBUG or SERVER_URL_IS_HTTPS) else "False",
 ) == "True"
 
 # Make local dev origins trusted for CSRF in DEBUG mode
@@ -349,8 +353,11 @@ REMEMBER_ME_SESSION_AGE = int(os.getenv("REMEMBER_ME_SESSION_AGE", 60 * 60 * 24 
 
 # --- Social Authentication (Google) ---
 SOCIAL_AUTH_URL_NAMESPACE = "social"
-# Force HTTPS redirects in non-debug environments (behind proxy, relies on SECURE_PROXY_SSL_HEADER)
-SOCIAL_AUTH_REDIRECT_IS_HTTPS = os.getenv("SOCIAL_AUTH_REDIRECT_IS_HTTPS", "False" if DEBUG else "True") == "True"
+# Force HTTPS redirects for social auth in production or when BASE_URL_SERVER is HTTPS
+SOCIAL_AUTH_REDIRECT_IS_HTTPS = os.getenv(
+    "SOCIAL_AUTH_REDIRECT_IS_HTTPS",
+    "True" if (not DEBUG or SERVER_URL_IS_HTTPS) else "False",
+) == "True"
 
 # Credentials (from env). Prefer explicit SOCIAL_ vars, fallback to GOOGLE_* for convenience
 SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = os.getenv("SOCIAL_AUTH_GOOGLE_OAUTH2_KEY") or os.getenv("GOOGLE_CLIENT_ID", "")
