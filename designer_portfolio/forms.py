@@ -17,18 +17,18 @@ class DesignerSignUpForm(UserCreationForm):
 
     # Subscription plan selection (by plan "name" string to match template radios)
     subscription_plan = forms.ChoiceField(
-        choices=[('', 'Free Trial (1 Month)')] + SubscriptionPlan.PLAN_TYPES,
+        choices=[("", "Free Trial (until you're ready)")] + SubscriptionPlan.PLAN_TYPES,
         required=False,
         widget=forms.RadioSelect,
-        help_text="Start with a free trial, then choose your subscription plan"
+        help_text="Feel free to upload designs and pick a subscription plan whenever you're satisfied."
     )
 
     # Payment method selection
     payment_method = forms.ChoiceField(
-        choices=[('', 'Choose payment method after trial')] + UserSubscription.PAYMENT_METHODS,
+        choices=[("", "Choose payment method when you upgrade")] + UserSubscription.PAYMENT_METHODS,
         required=False,
         widget=forms.RadioSelect,
-        help_text="Payment will be charged after your free trial ends"
+        help_text="Set up payment details only when you decide to upgrade from the free trial."
     )
 
     # Terms and conditions
