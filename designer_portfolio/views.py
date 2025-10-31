@@ -17,6 +17,7 @@ from django.utils import timezone
 from datetime import timedelta
 from django.db import transaction
 from django.db.models import Q
+from django.urls import reverse
 from .forms import DesignerSignUpForm, DesignerLoginForm
 from .models import (
     DesignerProfile,
@@ -153,52 +154,175 @@ class DesignDetailView(DetailView):
     template_name = "designer_portfolio/design_detail.html"
 class EventListView(TemplateView):
     template_name = "designer_portfolio/events.html"
+
+
 class EventDetailView(DetailView):
     template_name = "designer_portfolio/event_detail.html"
+
+
+def _build_dashboard_context(user):
+    """Return the dashboard context tailored for an authenticated designer."""
+
+    context = {"current_section": "dashboard"}
+
+    if user is None or not getattr(user, "is_authenticated", False):
+        return context
+
+    try:
+        user_designs_qs = Design.objects.filter(designer=user).order_by("-created_at")
+    except Exception:
+        user_designs_qs = Design.objects.none()
+
+    recent_designs = list(user_designs_qs[:8]) if user_designs_qs is not None else []
+    total_designs = user_designs_qs.count() if user_designs_qs is not None else 0
+
+    try:
+        designs_with_techpack_count = (
+            user_designs_qs.filter(Q(techpack_pdf__isnull=False) | Q(techpack_excel__isnull=False)).count()
+            if user_designs_qs is not None
+            else 0
+        )
+    except Exception:
+        designs_with_techpack_count = 0
+
+    published_designs = user_designs_qs.filter(published=True).count() if user_designs_qs is not None else 0
+
+    try:
+        total_collections = Collection.objects.count()
+    except Exception:
+        total_collections = 0
+
+    try:
+        total_events = Event.objects.count()
+    except Exception:
+        total_events = 0
+
+    try:
+        recent_collections = list(Collection.objects.order_by("-year", "name")[:5])
+    except Exception:
+        recent_collections = []
+
+    try:
+        profile, _ = DesignerProfile.objects.get_or_create(user=user)
+    except Exception:
+        profile = None
+
+    subscription = getattr(user, "subscription", None)
+    if subscription is None:
+        trial_end = timezone.now() + timedelta(days=30)
+        try:
+            subscription = UserSubscription.objects.create(
+                user=user,
+                plan=None,
+                status="free_trial",
+                payment_method=None,
+                trial_start_date=timezone.now(),
+                trial_end_date=trial_end,
+                next_billing_date=trial_end,
+            )
+        except Exception:
+            subscription = None
+
+    try:
+        status_label = subscription.get_status_display() if subscription else "Unavailable"
+    except Exception:
+        status_label = "Unavailable"
+
+    plan_label = (
+        getattr(subscription.plan, "display_name", None)
+        if subscription is not None and getattr(subscription, "plan", None) is not None
+        else "Free Access"
+    )
+
+    trial_days_remaining = getattr(subscription, "days_left_in_trial", 0) if subscription else 0
+
+    registered_user_perks = [
+        {
+            "title": "Full access to design tools",
+            "description": "Use the complete suite to sketch, refine, and deliver production-ready looks without limits.",
+            "icon": "fa-pen-ruler",
+        },
+        {
+            "title": "Portfolio creation and management",
+            "description": "Curate your work in a living portfolio, organize collections, and control what the world sees.",
+            "icon": "fa-briefcase",
+        },
+        {
+            "title": "Community features",
+            "description": "Stay connected with fellow designers, share feedback, and collaborate on upcoming drops.",
+            "icon": "fa-users",
+        },
+        {
+            "title": "Premium templates",
+            "description": "Publish polished presentations instantly with ready-to-use, customizable portfolio templates.",
+            "icon": "fa-layer-group",
+        },
+    ]
+
+    hero_features = [perk["title"] for perk in registered_user_perks]
+
+    try:
+        primary_cta_href = reverse("designer_design_create")
+    except Exception:
+        primary_cta_href = "#"
+
+    try:
+        secondary_cta_href = reverse("designer_designs")
+    except Exception:
+        secondary_cta_href = "#"
+
+    dashboard_hero = {
+        "heading": "Unlimited FREE Access",
+        "subheading": "Explore every AIOak feature with no commitment and no deadlines.",
+        "perks": hero_features,
+        "cta_label": "Start a new design",
+        "cta_href": primary_cta_href,
+        "secondary_cta_label": "Manage your portfolio",
+        "secondary_cta_href": secondary_cta_href,
+        "user_greeting": (user.first_name or user.username or "there"),
+    }
+
+    account_snapshot = {
+        "display_name": user.get_full_name() or user.username,
+        "email": user.email,
+        "membership_level": "Unlimited FREE Access",
+        "status_label": status_label,
+        "plan_label": plan_label,
+        "trial_days_remaining": trial_days_remaining,
+        "trial_end_date": getattr(subscription, "trial_end_date", None) if subscription else None,
+        "next_billing_date": getattr(subscription, "next_billing_date", None) if subscription else None,
+        "last_login": getattr(user, "last_login", None),
+        "joined": getattr(user, "date_joined", None),
+        "total_designs": total_designs,
+        "published_designs": published_designs,
+        "designs_with_techpack": designs_with_techpack_count,
+    }
+
+    context.update(
+        {
+            "total_designs": total_designs,
+            "total_collections": total_collections,
+            "total_events": total_events,
+            "user_designs": recent_designs,
+            "recent_designs": recent_designs,
+            "recent_collections": recent_collections,
+            "designer_profile": profile,
+            "dashboard_hero": dashboard_hero,
+            "account_snapshot": account_snapshot,
+            "registered_user_perks": registered_user_perks,
+        }
+    )
+
+    return context
+
+
 class DesignerDashboardView(LoginRequiredMixin, TemplateView):
     template_name = "designer_portfolio/designer_dashboard.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user
-
-        # Simplified dashboard to avoid potential issues
-        try:
-            user_designs_qs = Design.objects.filter(designer=user).order_by("-created_at")
-            recent_designs = list(user_designs_qs[:8])
-            total_designs = user_designs_qs.count()
-        except Exception as e:
-            # Fallback if there's an issue with Design model
-            recent_designs = []
-            total_designs = 0
-
-        try:
-            total_collections = Collection.objects.count()
-        except Exception as e:
-            total_collections = 0
-
-        try:
-            total_events = Event.objects.count()
-        except Exception as e:
-            total_events = 0
-
-        try:
-            recent_collections = list(Collection.objects.order_by("-year", "name")[:5])
-        except Exception as e:
-            recent_collections = []
-
-        context.update(
-            {
-                "current_section": "dashboard",
-                "total_designs": total_designs,
-                "total_collections": total_collections,
-                "total_events": total_events,
-                "user_designs": recent_designs,
-                "recent_designs": recent_designs,
-                "recent_collections": recent_collections,
-            }
-        )
-
+        context.update(_build_dashboard_context(user))
         return context
 
 class PendingDesignersView(ListView):
@@ -355,7 +479,7 @@ class DesignerRegistrationView(APIView):
             def send_registration_emails():
                 # Welcome email to designer
                 send_mail(
-                    subject="Welcome to designer — Your Account Is Ready",
+                    subject="Welcome to designer ? Your Account Is Ready",
                     message=(
                         f"Hello {username},\n\n"
                         "Thanks for registering as a designer with designer.\n"
@@ -371,7 +495,7 @@ class DesignerRegistrationView(APIView):
                 owner_email = getattr(settings, "ADMIN_EMAIL", None)
                 if owner_email:
                     send_mail(
-                        subject="New Designer Registration — Review Needed",
+                        subject="New Designer Registration ? Review Needed",
                         message=(
                             "A new designer has registered and is pending approval.\n\n"
                             f"Username: {username}\n"
@@ -442,7 +566,8 @@ def generate_techpack(request, slug):
 
 @login_required
 def dashboard_view(request):
-    return render(request, "designer_portfolio/dashboard.html", {"current_section": "dashboard"})
+    context = _build_dashboard_context(request.user)
+    return render(request, "designer_portfolio/dashboard.html", context)
 
 @login_required
 def designer_designs_view(request):

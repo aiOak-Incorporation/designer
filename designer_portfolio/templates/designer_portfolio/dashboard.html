@@ -1,449 +1,700 @@
-{% extends "designer_portfolio/base.html" %} {% load static %} {% block content %}
-<div
-  class="dashboard-container"
-  style="max-width: 1200px; margin: 0 auto; padding: 20px"
->
-  <!-- Dashboard Header -->
-  <div
-    class="dashboard-header"
-    style="
-      background: linear-gradient(135deg, #280768, #3d0a85);
-      color: white;
-      padding: 30px;
-      border-radius: 15px;
-      margin-bottom: 30px;
-      text-align: center;
-    "
-  >
-    <h1 style="margin: 0 0 10px 0; font-size: 32px; font-weight: 700">
-      Welcome back, {{ user.username }}!
-    </h1>
-    <p style="margin: 0; font-size: 18px; opacity: 0.9">
-      Manage your designs and showcase your creativity
-    </p>
-  </div>
-
-  <!-- Statistics Cards -->
-  <div
-    class="stats-grid"
-    style="
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 20px;
-      margin-bottom: 30px;
-    "
-  >
-    <div
-      class="stat-card"
-      style="
-        background: white;
-        padding: 25px;
-        border-radius: 12px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        text-align: center;
-        border-left: 4px solid #280768;
-      "
-    >
-      <div
-        style="
-          font-size: 36px;
-          font-weight: bold;
-          color: #280768;
-          margin-bottom: 10px;
-        "
-      >
-        {{ total_designs }}
+{% extends "designer_portfolio/base.html" %}
+{% load static %}
+{% block content %}
+<div class="dashboard-container">
+  <section class="dashboard-hero">
+    <div class="hero-copy">
+      <span class="hero-greeting">Welcome back, {{ dashboard_hero.user_greeting }}!</span>
+      <h1>{{ dashboard_hero.heading }}</h1>
+      <p class="hero-subheading">{{ dashboard_hero.subheading }}</p>
+      <ul class="hero-perks">
+        {% for perk in dashboard_hero.perks %}
+        <li>
+          <i class="fas fa-check-circle"></i>
+          <span>{{ perk }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+      <div class="hero-actions">
+        <a href="{{ dashboard_hero.cta_href }}" class="btn-primary">{{ dashboard_hero.cta_label }}</a>
+        <a href="{{ dashboard_hero.secondary_cta_href }}" class="btn-secondary">{{ dashboard_hero.secondary_cta_label }}</a>
       </div>
-      <div style="color: #666; font-size: 16px; margin-bottom: 15px">
-        Total Designs
-      </div>
-      <a
-        href="{% url 'designer_designs' %}"
-        style="color: #280768; text-decoration: none; font-weight: 600"
-        >View All →</a
-      >
     </div>
-
-    <div
-      class="stat-card"
-      style="
-        background: white;
-        padding: 25px;
-        border-radius: 12px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        text-align: center;
-        border-left: 4px solid #e67e22;
-      "
-    >
-      <div
-        style="
-          font-size: 36px;
-          font-weight: bold;
-          color: #e67e22;
-          margin-bottom: 10px;
-        "
-      >
-        {{ total_collections }}
+    <div class="account-card">
+      <div class="card-header">
+        <span class="badge">Account Snapshot</span>
+        <h3>{{ account_snapshot.display_name }}</h3>
+        {% if account_snapshot.email %}
+        <p class="muted">{{ account_snapshot.email }}</p>
+        {% endif %}
       </div>
-      <div style="color: #666; font-size: 16px; margin-bottom: 15px">
-        Collections
+      <div class="card-body">
+        <div class="info-row">
+          <span>Membership</span>
+          <span>{{ account_snapshot.membership_level }}</span>
+        </div>
+        <div class="info-row">
+          <span>Status</span>
+          <span>{{ account_snapshot.status_label }}</span>
+        </div>
+        <div class="info-row">
+          <span>Plan</span>
+          <span>{{ account_snapshot.plan_label }}</span>
+        </div>
+        <div class="info-row">
+          <span>Total designs</span>
+          <span>{{ account_snapshot.total_designs }}</span>
+        </div>
+        <div class="info-row">
+          <span>Published</span>
+          <span>{{ account_snapshot.published_designs }}</span>
+        </div>
+        <div class="info-row">
+          <span>Techpacks ready</span>
+          <span>{{ account_snapshot.designs_with_techpack }}</span>
+        </div>
+        {% if account_snapshot.trial_days_remaining %}
+        <div class="info-row">
+          <span>Trial days left</span>
+          <span>{{ account_snapshot.trial_days_remaining }} day{{ account_snapshot.trial_days_remaining|pluralize }}</span>
+        </div>
+        {% endif %}
+        {% if account_snapshot.trial_end_date %}
+        <div class="info-row">
+          <span>Trial ends</span>
+          <span>{{ account_snapshot.trial_end_date|date:"M j, Y" }}</span>
+        </div>
+        {% endif %}
+        {% if account_snapshot.next_billing_date %}
+        <div class="info-row">
+          <span>Next billing</span>
+          <span>{{ account_snapshot.next_billing_date|date:"M j, Y" }}</span>
+        </div>
+        {% endif %}
+        {% if account_snapshot.last_login %}
+        <div class="info-row">
+          <span>Last login</span>
+          <span>{{ account_snapshot.last_login|date:"M j, Y H:i" }}</span>
+        </div>
+        {% endif %}
+        {% if account_snapshot.joined %}
+        <div class="info-row">
+          <span>Member since</span>
+          <span>{{ account_snapshot.joined|date:"M j, Y" }}</span>
+        </div>
+        {% endif %}
       </div>
-      <a
-        href="{% url 'collections' %}"
-        style="color: #e67e22; text-decoration: none; font-weight: 600"
-        >Explore →</a
-      >
+      <div class="card-footer">
+        <a href="{% url 'designer_about_me' %}">Update profile →</a>
+      </div>
     </div>
+  </section>
 
-    <div
-      class="stat-card"
-      style="
-        background: white;
-        padding: 25px;
-        border-radius: 12px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        text-align: center;
-        border-left: 4px solid #27ae60;
-      "
-    >
-      <div
-        style="
-          font-size: 36px;
-          font-weight: bold;
-          color: #27ae60;
-          margin-bottom: 10px;
-        "
-      >
-        {{ total_events }}
-      </div>
-      <div style="color: #666; font-size: 16px; margin-bottom: 15px">
-        Events
-      </div>
-      <a
-        href="{% url 'event_list' %}"
-        style="color: #27ae60; text-decoration: none; font-weight: 600"
-        >View Events →</a
-      >
+  <section class="stats-section">
+    <div class="stat-card primary">
+      <span class="stat-value">{{ total_designs }}</span>
+      <span class="stat-label">Total Designs</span>
+      <a href="{% url 'designer_designs' %}">View All →</a>
     </div>
-  </div>
+    <div class="stat-card accent">
+      <span class="stat-value">{{ total_collections }}</span>
+      <span class="stat-label">Collections</span>
+      <a href="{% url 'collections' %}">Explore →</a>
+    </div>
+    <div class="stat-card success">
+      <span class="stat-value">{{ total_events }}</span>
+      <span class="stat-label">Events</span>
+      <a href="{% url 'event_list' %}">View Events →</a>
+    </div>
+  </section>
 
-  <!-- Main Content Grid -->
-  <div
-    class="content-grid"
-    style="display: grid; grid-template-columns: 2fr 1fr; gap: 30px"
-  >
-    <!-- Recent Designs Section -->
-    <div
-      class="recent-designs"
-      style="
-        background: white;
-        padding: 25px;
-        border-radius: 12px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-      "
-    >
-      <div
-        style="
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 20px;
-        "
-      >
-        <h2 style="margin: 0; color: #333; font-size: 24px">Recent Designs</h2>
-        <a
-          href="{% url 'designer_design_create' %}"
-          style="
-            background: #280768;
-            color: white;
-            padding: 10px 20px;
-            text-decoration: none;
-            border-radius: 6px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-          "
-        >
-          + New Design
-        </a>
+  <section class="perks-section" id="registered-perks">
+    <h2>Included with Unlimited FREE Access</h2>
+    <p class="muted">Everything you need to explore AIOak and grow your fashion portfolio from day one.</p>
+    <div class="perks-grid">
+      {% for perk in registered_user_perks %}
+      <article class="perk-card">
+        <div class="perk-icon">
+          <i class="fas {{ perk.icon }}"></i>
+        </div>
+        <h3>{{ perk.title }}</h3>
+        <p>{{ perk.description }}</p>
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="content-grid">
+    <div class="recent-designs">
+      <div class="section-header">
+        <h2>Recent Designs</h2>
+        <a href="{% url 'designer_design_create' %}" class="btn-primary subtle">+ New Design</a>
       </div>
 
       {% if user_designs %}
       <div class="designs-list">
         {% for design in user_designs %}
-        <div
-          class="design-item"
-          style="
-            display: flex;
-            align-items: center;
-            padding: 15px;
-            border: 1px solid #f0f0f0;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            transition: all 0.3s ease;
-          "
-        >
+        <div class="design-item">
           {% if design.cover_image %}
-          <img
-            src="{{ design.cover_image.url }}"
-            alt="{{ design.title }}"
-            style="
-              width: 60px;
-              height: 60px;
-              object-fit: cover;
-              border-radius: 6px;
-              margin-right: 15px;
-            "
-          />
+          <img src="{{ design.cover_image.url }}" alt="{{ design.title }}" />
           {% else %}
-          <div
-            style="
-              width: 60px;
-              height: 60px;
-              background: #f8f9fa;
-              border-radius: 6px;
-              margin-right: 15px;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              color: #666;
-            "
-          >
+          <div class="design-placeholder">
             <i class="fas fa-image"></i>
           </div>
           {% endif %}
 
-          <div style="flex: 1">
-            <h4 style="margin: 0 0 5px 0; color: #333">{{ design.title }}</h4>
-            <p style="margin: 0; color: #666; font-size: 14px">
-              {{ design.season }} {{ design.year }}
-            </p>
+          <div class="design-meta">
+            <h4>{{ design.title }}</h4>
+            <p>{{ design.season }} {{ design.year }}</p>
           </div>
 
-          <div class="design-actions" style="display: flex; gap: 10px">
-            <a
-              href="{% url 'designer_design_edit' design.id %}"
-              style="
-                color: #3498db;
-                text-decoration: none;
-                padding: 5px 10px;
-                border: 1px solid #3498db;
-                border-radius: 4px;
-                font-size: 12px;
-              "
-              >Edit</a
-            >
-            <a
-              href="{% url 'design_detail' design.slug %}"
-              style="
-                color: #27ae60;
-                text-decoration: none;
-                padding: 5px 10px;
-                border: 1px solid #27ae60;
-                border-radius: 4px;
-                font-size: 12px;
-              "
-              >View</a
-            >
+          <div class="design-actions">
+            <a href="{% url 'designer_design_edit' design.id %}" class="outline blue">Edit</a>
+            <a href="{% url 'design_detail' design.slug %}" class="outline green">View</a>
           </div>
         </div>
         {% endfor %}
       </div>
 
-      <div style="text-align: center; margin-top: 20px">
-        <a
-          href="{% url 'designer_designs' %}"
-          style="color: #280768; text-decoration: none; font-weight: 600"
-          >View All Designs →</a
-        >
+      <div class="section-footer">
+        <a href="{% url 'designer_designs' %}">View All Designs →</a>
       </div>
       {% else %}
-      <div style="text-align: center; padding: 40px; color: #666">
-        <i
-          class="fas fa-palette"
-          style="font-size: 48px; margin-bottom: 15px; color: #ddd"
-        ></i>
-        <p style="margin: 0 0 20px 0">
-          No designs yet. Start creating your portfolio!
-        </p>
-        <a
-          href="{% url 'designer_design_create' %}"
-          style="
-            background: #280768;
-            color: white;
-            padding: 12px 24px;
-            text-decoration: none;
-            border-radius: 6px;
-            font-weight: 600;
-          "
-          >Create Your First Design</a
-        >
+      <div class="empty-state">
+        <i class="fas fa-palette"></i>
+        <p>No designs yet. Start creating your portfolio!</p>
+        <a href="{% url 'designer_design_create' %}" class="btn-primary">Create Your First Design</a>
       </div>
       {% endif %}
     </div>
 
-    <!-- Quick Actions Sidebar -->
-    <div
-      class="quick-actions"
-      style="
-        background: white;
-        padding: 25px;
-        border-radius: 12px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-      "
-    >
-      <h3 style="margin: 0 0 20px 0; color: #333; font-size: 20px">
-        Quick Actions
-      </h3>
-
-      <div
-        class="action-buttons"
-        style="display: flex; flex-direction: column; gap: 12px"
-      >
-        <a
-          href="{% url 'designer_design_create' %}"
-          style="
-            display: flex;
-            align-items: center;
-            padding: 15px;
-            background: #280768;
-            color: white;
-            text-decoration: none;
-            border-radius: 8px;
-            transition: all 0.3s ease;
-          "
-        >
-          <i
-            class="fas fa-plus-circle"
-            style="margin-right: 12px; font-size: 18px"
-          ></i>
+    <aside class="quick-actions">
+      <h3>Quick Actions</h3>
+      <div class="action-buttons">
+        <a href="{% url 'designer_about_me' %}" class="action muted">
+          <i class="fas fa-user-edit"></i>
+          <span>Edit Profile / About Me</span>
+        </a>
+        <a href="{% url 'designer_design_create' %}" class="action primary">
+          <i class="fas fa-plus-circle"></i>
           <span>Create New Design</span>
         </a>
-
-        <a
-          href="{% url 'designer_designs' %}"
-          style="
-            display: flex;
-            align-items: center;
-            padding: 15px;
-            background: #f8f9fa;
-            color: #333;
-            text-decoration: none;
-            border-radius: 8px;
-            border: 1px solid #e9ecef;
-            transition: all 0.3s ease;
-          "
-        >
-          <i
-            class="fas fa-list"
-            style="margin-right: 12px; font-size: 18px; color: #666"
-          ></i>
+        <a href="{% url 'designer_designs' %}" class="action muted">
+          <i class="fas fa-list"></i>
           <span>Manage Designs</span>
         </a>
-
-        <a
-          href="{% url 'upload_design' %}"
-          style="
-            display: flex;
-            align-items: center;
-            padding: 15px;
-            background: #f8f9fa;
-            color: #333;
-            text-decoration: none;
-            border-radius: 8px;
-            border: 1px solid #e9ecef;
-            transition: all 0.3s ease;
-          "
-        >
-          <i
-            class="fas fa-upload"
-            style="margin-right: 12px; font-size: 18px; color: #666"
-          ></i>
+        <a href="{% url 'upload_design' %}" class="action muted">
+          <i class="fas fa-upload"></i>
           <span>Upload Design</span>
         </a>
-
-        <a
-          href="{% url 'collections' %}"
-          style="
-            display: flex;
-            align-items: center;
-            padding: 15px;
-            background: #f8f9fa;
-            color: #333;
-            text-decoration: none;
-            border-radius: 8px;
-            border: 1px solid #e9ecef;
-            transition: all 0.3s ease;
-          "
-        >
-          <i
-            class="fas fa-images"
-            style="margin-right: 12px; font-size: 18px; color: #666"
-          ></i>
+        <a href="{% url 'collections' %}" class="action muted">
+          <i class="fas fa-images"></i>
           <span>Browse Collections</span>
         </a>
       </div>
 
-      <!-- Recent Collections -->
       {% if recent_collections %}
-      <div style="margin-top: 30px">
-        <h4 style="margin: 0 0 15px 0; color: #333; font-size: 16px">
-          Latest Collections
-        </h4>
+      <div class="latest-collections">
+        <h4>Latest Collections</h4>
         {% for collection in recent_collections %}
-        <div
-          style="
-            padding: 10px;
-            border-left: 3px solid #280768;
-            background: #f8f9fa;
-            margin-bottom: 8px;
-            border-radius: 4px;
-          "
-        >
-          <a
-            href="{% url 'collection_detail' collection.slug %}"
-            style="
-              color: #333;
-              text-decoration: none;
-              font-weight: 600;
-              font-size: 14px;
-            "
-            >{{ collection.name }}</a
-          >
-          <div style="color: #666; font-size: 12px; margin-top: 2px">
-            {{ collection.year }}
-          </div>
-        </div>
+        <a href="{% url 'collection_detail' collection.slug %}">
+          <span>{{ collection.name }}</span>
+          <span class="muted">{{ collection.year }}</span>
+        </a>
         {% endfor %}
       </div>
       {% endif %}
-    </div>
-  </div>
+    </aside>
+  </section>
 </div>
 
 <style>
-  .stat-card:hover {
+  .dashboard-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+  }
+
+  .dashboard-hero {
+    background: linear-gradient(135deg, #280768, #3d0a85);
+    color: #ffffff;
+    border-radius: 20px;
+    padding: 36px;
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1.4fr);
+    gap: 32px;
+    align-items: stretch;
+  }
+
+  .hero-copy .hero-greeting {
+    font-size: 16px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    opacity: 0.8;
+  }
+
+  .hero-copy h1 {
+    font-size: 40px;
+    font-weight: 700;
+    margin: 12px 0 8px;
+  }
+
+  .hero-copy .hero-subheading {
+    font-size: 18px;
+    max-width: 540px;
+    opacity: 0.9;
+  }
+
+  .hero-perks {
+    list-style: none;
+    padding: 0;
+    margin: 24px 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+  }
+
+  .hero-perks li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 12px 16px;
+    border-radius: 10px;
+  }
+
+  .hero-perks i {
+    color: #4ade80;
+  }
+
+  .hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .btn-primary,
+  .btn-secondary,
+  .btn-primary.subtle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 24px;
+    border-radius: 999px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  }
+
+  .btn-primary {
+    background: #ffffff;
+    color: #280768;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  }
+
+  .btn-primary.subtle {
+    padding: 10px 20px;
+    background: #280768;
+    color: #ffffff;
+    box-shadow: none;
+  }
+
+  .btn-primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15) !important;
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.25);
+  }
+
+  .btn-secondary {
+    background: rgba(255, 255, 255, 0.18);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+  }
+
+  .btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.28);
+    transform: translateY(-2px);
+  }
+
+  .account-card {
+    background: rgba(15, 6, 36, 0.55);
+    border-radius: 16px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+  }
+
+  .account-card .card-header h3 {
+    margin: 8px 0 4px;
+    font-size: 24px;
+  }
+
+  .account-card .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.18);
+    text-transform: uppercase;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+  }
+
+  .account-card .muted {
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  .account-card .info-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    font-size: 14px;
+  }
+
+  .account-card .info-row:last-child {
+    border-bottom: none;
+  }
+
+  .account-card .card-footer a {
+    color: #ffffff;
+    text-decoration: none;
+    font-weight: 600;
+  }
+
+  .stats-section {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 18px;
+  }
+
+  .stat-card {
+    background: #ffffff;
+    padding: 24px;
+    border-radius: 16px;
+    box-shadow: 0 12px 30px rgba(31, 65, 114, 0.1);
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    border-left: 4px solid transparent;
+  }
+
+  .stat-card.primary {
+    border-color: #280768;
+  }
+
+  .stat-card.accent {
+    border-color: #e67e22;
+  }
+
+  .stat-card.success {
+    border-color: #27ae60;
+  }
+
+  .stat-card .stat-value {
+    font-size: 36px;
+    font-weight: 700;
+    color: #280768;
+  }
+
+  .stat-card.accent .stat-value {
+    color: #e67e22;
+  }
+
+  .stat-card.success .stat-value {
+    color: #27ae60;
+  }
+
+  .stat-card a {
+    color: inherit;
+    text-decoration: none;
+    font-weight: 600;
+  }
+
+  .perks-section {
+    background: #ffffff;
+    border-radius: 20px;
+    padding: 32px;
+    box-shadow: 0 16px 40px rgba(40, 7, 104, 0.08);
+  }
+
+  .perks-section h2 {
+    margin-bottom: 12px;
+    font-size: 28px;
+    color: #280768;
+  }
+
+  .perks-section .muted {
+    color: #6b7280;
+    margin-bottom: 28px;
+  }
+
+  .perks-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+  }
+
+  .perk-card {
+    background: linear-gradient(155deg, #f7f5ff, #ffffff);
+    border: 1px solid #ece8ff;
+    border-radius: 16px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    box-shadow: 0 8px 24px rgba(40, 7, 104, 0.1);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .perk-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 16px 32px rgba(40, 7, 104, 0.15);
+  }
+
+  .perk-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: #280768;
+    display: grid;
+    place-items: center;
+    color: #ffffff;
+    font-size: 20px;
+  }
+
+  .content-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    gap: 28px;
+  }
+
+  .recent-designs,
+  .quick-actions {
+    background: #ffffff;
+    border-radius: 20px;
+    padding: 28px;
+    box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+  }
+
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+
+  .designs-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .design-item {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 16px;
+    border: 1px solid #f1f5f9;
+    border-radius: 14px;
+    transition: border 0.2s ease, transform 0.2s ease;
   }
 
   .design-item:hover {
-    background: #f8f9fa !important;
-    border-color: #280768 !important;
+    border-color: #280768;
+    transform: translateX(4px);
   }
 
-  .action-buttons a:hover {
-    transform: translateX(5px);
+  .design-item img,
+  .design-placeholder {
+    width: 64px;
+    height: 64px;
+    border-radius: 12px;
+    object-fit: cover;
+    background: #f8fafc;
+    display: grid;
+    place-items: center;
+    color: #94a3b8;
   }
 
-  @media (max-width: 768px) {
-    .content-grid {
-      grid-template-columns: 1fr !important;
+  .design-meta h4 {
+    margin: 0 0 4px;
+    color: #1e293b;
+  }
+
+  .design-meta p {
+    margin: 0;
+    color: #64748b;
+    font-size: 14px;
+  }
+
+  .design-actions {
+    margin-left: auto;
+    display: flex;
+    gap: 10px;
+  }
+
+  .design-actions a {
+    padding: 8px 14px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none;
+    border: 1px solid transparent;
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+
+  .design-actions a.outline {
+    background: transparent;
+    border-color: currentColor;
+  }
+
+  .design-actions a.blue {
+    color: #2563eb;
+  }
+
+  .design-actions a.green {
+    color: #22c55e;
+  }
+
+  .design-actions a.outline:hover {
+    background: currentColor;
+    color: #ffffff;
+  }
+
+  .section-footer {
+    text-align: center;
+    margin-top: 24px;
+  }
+
+  .section-footer a {
+    color: #280768;
+    text-decoration: none;
+    font-weight: 600;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 48px 24px;
+    color: #64748b;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    align-items: center;
+  }
+
+  .empty-state i {
+    font-size: 48px;
+    color: #d1d5db;
+  }
+
+  .quick-actions h3 {
+    margin: 0 0 20px;
+    color: #1f2937;
+  }
+
+  .action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .action {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    border-radius: 14px;
+    text-decoration: none;
+    border: 1px solid #e2e8f0;
+    transition: transform 0.2s ease, border 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .action i {
+    font-size: 18px;
+  }
+
+  .action.primary {
+    background: #280768;
+    color: #ffffff;
+    border-color: transparent;
+  }
+
+  .action.primary:hover {
+    box-shadow: 0 12px 24px rgba(40, 7, 104, 0.25);
+  }
+
+  .action.muted {
+    background: #f8fafc;
+    color: #1f2937;
+  }
+
+  .action:hover {
+    transform: translateX(6px);
+    border-color: #280768;
+  }
+
+  .latest-collections {
+    margin-top: 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .latest-collections h4 {
+    margin: 0;
+    color: #1f2937;
+  }
+
+  .latest-collections a {
+    display: flex;
+    justify-content: space-between;
+    text-decoration: none;
+    padding: 12px 0;
+    border-bottom: 1px solid #e2e8f0;
+    color: #1f2937;
+    font-weight: 500;
+  }
+
+  .latest-collections a:last-child {
+    border-bottom: none;
+  }
+
+  .latest-collections a .muted {
+    color: #6b7280;
+    font-size: 14px;
+  }
+
+  @media (max-width: 1024px) {
+    .dashboard-hero {
+      grid-template-columns: 1fr;
     }
 
-    .stats-grid {
-      grid-template-columns: 1fr !important;
+    .content-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .dashboard-container {
+      padding: 16px;
+      gap: 24px;
+    }
+
+    .hero-copy h1 {
+      font-size: 32px;
+    }
+
+    .stat-card {
+      padding: 20px;
     }
   }
 </style>
-
 {% endblock %}
