@@ -3,7 +3,60 @@ from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.utils import timezone
 from datetime import timedelta
-from .models import SubscriptionPlan, UserSubscription, DesignerProfile
+from .models import SubscriptionPlan, UserSubscription, DesignerProfile, Design
+
+
+class DesignUploadForm(forms.ModelForm):
+    SEASON_CHOICES = [
+        ("Spring", "Spring"),
+        ("Summer", "Summer"),
+        ("Fall", "Fall"),
+        ("Winter", "Winter"),
+        ("Resort", "Resort"),
+        ("Pre-Fall", "Pre-Fall"),
+    ]
+
+    season = forms.ChoiceField(choices=[("", "Select Season")] + SEASON_CHOICES)
+    published = forms.BooleanField(required=False, initial=True)
+
+    class Meta:
+        model = Design
+        fields = [
+            "title",
+            "season",
+            "year",
+            "description",
+            "cover_image",
+            "color_palette",
+            "size_range",
+            "target_price",
+            "fabric_details",
+            "production_notes",
+            "published",
+        ]
+        widgets = {
+            "description": forms.Textarea(attrs={"rows": 4}),
+            "fabric_details": forms.Textarea(attrs={"rows": 3}),
+            "production_notes": forms.Textarea(attrs={"rows": 4}),
+        }
+
+    def clean_year(self):
+        year = self.cleaned_data.get("year")
+        if year and (year < 1900 or year > 2100):
+            raise forms.ValidationError("Please enter a valid year.")
+        return year
+
+    def clean_season(self):
+        season = self.cleaned_data.get("season")
+        if not season:
+            raise forms.ValidationError("Please choose a season.")
+        return season
+
+    def clean_target_price(self):
+        value = self.cleaned_data.get("target_price")
+        if value is not None and value < 0:
+            raise forms.ValidationError("Target price cannot be negative.")
+        return value
 
 class DesignerSignUpForm(UserCreationForm):
     email = forms.EmailField(required=True)

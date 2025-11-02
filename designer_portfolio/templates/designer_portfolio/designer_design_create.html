@@ -6,17 +6,11 @@
   <div class="alert alert-{{ message.tags }}">{{ message }}</div>
   {% endfor %} {% endif %}
 
-  <!-- Upload Progress -->
-  <div class="upload-progress" id="uploadProgress" style="display: none">
-    <div class="progress-header">
-      <h3>Uploading Design...</h3>
-      <div class="progress-percentage" id="progressPercentage">0%</div>
-    </div>
-    <div class="progress-bar">
-      <div class="progress-fill" id="progressFill"></div>
-    </div>
-    <div class="progress-status" id="progressStatus">Preparing upload...</div>
+  {% if form and form.non_field_errors %}
+  <div class="alert alert-error">
+    {% for error in form.non_field_errors %}{{ error }}{% if not forloop.last %}<br />{% endif %}{% endfor %}
   </div>
+  {% endif %}
 
   <!-- Upload Form -->
   <form
@@ -44,22 +38,14 @@
             required
             class="form-control"
             placeholder="Enter your design title"
+            value="{{ form.title.value|default_if_none:'' }}"
           />
+          {% if form.title.errors %}
+          <small class="form-error">{{ form.title.errors|join:', ' }}</small>
+          {% endif %}
           <small class="form-text"
             >A compelling title that describes your design</small
           >
-        </div>
-        <div class="form-group">
-          <label for="id_slug">URL Slug</label>
-          <input
-            type="text"
-            id="id_slug"
-            name="slug"
-            class="form-control"
-            placeholder="auto-generated-from-title"
-            readonly
-          />
-          <small class="form-text">Automatically generated from title</small>
         </div>
       </div>
 
@@ -71,7 +57,10 @@
           rows="4"
           class="form-control"
           placeholder="Describe your design concept, inspiration, and key features..."
-        ></textarea>
+        >{{ form.description.value|default_if_none:'' }}</textarea>
+        {% if form.description.errors %}
+        <small class="form-error">{{ form.description.errors|join:', ' }}</small>
+        {% endif %}
         <small class="form-text"
           >Help others understand your creative vision</small
         >
@@ -82,13 +71,15 @@
           <label for="id_season">Season *</label>
           <select id="id_season" name="season" required class="form-control">
             <option value="">Select Season</option>
-            <option value="Spring">Spring</option>
-            <option value="Summer">Summer</option>
-            <option value="Fall">Fall</option>
-            <option value="Winter">Winter</option>
-            <option value="Resort">Resort</option>
-            <option value="Pre-Fall">Pre-Fall</option>
+            {% for option in "Spring,Summer,Fall,Winter,Resort,Pre-Fall".split(',') %}
+            <option value="{{ option }}" {% if form.season.value == option %}selected{% endif %}>
+              {{ option }}
+            </option>
+            {% endfor %}
           </select>
+          {% if form.season.errors %}
+          <small class="form-error">{{ form.season.errors|join:', ' }}</small>
+          {% endif %}
         </div>
         <div class="form-group">
           <label for="id_year">Year *</label>
@@ -100,8 +91,11 @@
             class="form-control"
             min="2020"
             max="2030"
-            value="{{ current_year }}"
+            value="{{ form.year.value|default:current_year }}"
           />
+          {% if form.year.errors %}
+          <small class="form-error">{{ form.year.errors|join:', ' }}</small>
+          {% endif %}
         </div>
       </div>
     </div>
@@ -142,6 +136,9 @@
             style="display: none"
             onchange="previewImage(this, 'cover')"
           />
+          {% if form.cover_image.errors %}
+          <small class="form-error">{{ form.cover_image.errors|join:', ' }}</small>
+          {% endif %}
         </div>
       </div>
 
@@ -180,65 +177,18 @@
         Design Specifications
       </h3>
 
-      <div class="form-row">
-        <div class="form-group">
-          <label for="id_category">Category</label>
-          <select id="id_category" name="category" class="form-control">
-            <option value="">Select Category</option>
-            <option value="tops">Tops</option>
-            <option value="bottoms">Bottoms</option>
-            <option value="dresses">Dresses</option>
-            <option value="outerwear">Outerwear</option>
-            <option value="accessories">Accessories</option>
-            <option value="footwear">Footwear</option>
-            <option value="swimwear">Swimwear</option>
-            <option value="activewear">Activewear</option>
-            <option value="lingerie">Lingerie</option>
-            <option value="other">Other</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="id_target_market">Target Market</label>
-          <select
-            id="id_target_market"
-            name="target_market"
-            class="form-control"
-          >
-            <option value="">Select Target Market</option>
-            <option value="womens">Women's</option>
-            <option value="mens">Men's</option>
-            <option value="unisex">Unisex</option>
-            <option value="kids">Kids</option>
-            <option value="teen">Teen</option>
-            <option value="plus_size">Plus Size</option>
-            <option value="petite">Petite</option>
-            <option value="maternity">Maternity</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-group">
-          <label for="id_fabric_type">Primary Fabric</label>
-          <input
-            type="text"
-            id="id_fabric_type"
-            name="fabric_type"
-            class="form-control"
-            placeholder="e.g., Cotton, Silk, Polyester, Denim"
-          />
-          <small class="form-text">Main fabric used in the design</small>
-        </div>
-        <div class="form-group">
-          <label for="id_fabric_weight">Fabric Weight</label>
-          <input
-            type="text"
-            id="id_fabric_weight"
-            name="fabric_weight"
-            class="form-control"
-            placeholder="e.g., Lightweight, Medium, Heavy"
-          />
-        </div>
+      <div class="form-group">
+        <label for="id_fabric_details">Fabric Details</label>
+        <textarea
+          id="id_fabric_details"
+          name="fabric_details"
+          rows="3"
+          class="form-control"
+          placeholder="Describe primary fabrics, textures, or construction notes"
+        >{{ form.fabric_details.value|default_if_none:'' }}</textarea>
+        {% if form.fabric_details.errors %}
+        <small class="form-error">{{ form.fabric_details.errors|join:', ' }}</small>
+        {% endif %}
       </div>
 
       <div class="form-row">
@@ -250,7 +200,11 @@
             name="color_palette"
             class="form-control"
             placeholder="e.g., Navy, White, Gold accents"
+            value="{{ form.color_palette.value|default_if_none:'' }}"
           />
+          {% if form.color_palette.errors %}
+          <small class="form-error">{{ form.color_palette.errors|join:', ' }}</small>
+          {% endif %}
           <small class="form-text">Main colors used in the design</small>
         </div>
         <div class="form-group">
@@ -263,7 +217,11 @@
             step="0.01"
             min="0"
             placeholder="0.00"
+            value="{{ form.target_price.value|default_if_none:'' }}"
           />
+          {% if form.target_price.errors %}
+          <small class="form-error">{{ form.target_price.errors|join:', ' }}</small>
+          {% endif %}
           <small class="form-text">Estimated retail price</small>
         </div>
       </div>
@@ -276,7 +234,11 @@
           name="size_range"
           class="form-control"
           placeholder="e.g., XS-XL, 0-14, One Size"
+          value="{{ form.size_range.value|default_if_none:'' }}"
         />
+        {% if form.size_range.errors %}
+        <small class="form-error">{{ form.size_range.errors|join:', ' }}</small>
+        {% endif %}
         <small class="form-text">Available size options</small>
       </div>
     </div>
@@ -336,30 +298,18 @@
       </div>
 
       <div class="form-group">
-        <label for="id_technical_notes">Technical Notes</label>
+        <label for="id_production_notes">Production Notes</label>
         <textarea
-          id="id_technical_notes"
-          name="technical_notes"
+          id="id_production_notes"
+          name="production_notes"
           rows="4"
           class="form-control"
           placeholder="Additional technical specifications, construction details, special requirements..."
-        ></textarea>
+        >{{ form.production_notes.value|default_if_none:'' }}</textarea>
+        {% if form.production_notes.errors %}
+        <small class="form-error">{{ form.production_notes.errors|join:', ' }}</small>
+        {% endif %}
         <small class="form-text">Any additional technical information</small>
-      </div>
-
-      <div class="form-group">
-        <label class="checkbox-label">
-          <input
-            type="checkbox"
-            id="id_has_techpack"
-            name="has_techpack"
-            value="true"
-          />
-          <span class="checkmark"></span>
-          <span class="checkbox-text"
-            >This design includes a complete tech pack</span
-          >
-        </label>
       </div>
     </div>
 
@@ -379,6 +329,7 @@
               name="published"
               value="true"
               class="toggle-input"
+              {% if form.published.value %}checked{% endif %}
             />
             <span class="toggle-slider"></span>
             <span class="toggle-text">Publish Immediately</span>
@@ -387,30 +338,11 @@
             >Make this design visible in your public portfolio</small
           >
         </div>
-
-        <div class="form-group">
-          <label class="checkbox-label">
-            <input
-              type="checkbox"
-              id="id_featured"
-              name="featured"
-              value="true"
-            />
-            <span class="checkmark"></span>
-            <span class="checkbox-text">Feature this design</span>
-          </label>
-          <small class="form-text"
-            >Highlight this design in your portfolio</small
-          >
-        </div>
       </div>
     </div>
 
     <!-- Form Actions -->
     <div class="form-actions">
-      <button type="button" class="btn btn-secondary" onclick="saveDraft()">
-        💾 Save as Draft
-      </button>
       <button type="submit" class="btn btn-primary">🚀 Upload Design</button>
     </div>
   </form>
@@ -564,6 +496,13 @@
     margin-top: 6px;
     font-size: 12px;
     color: #666;
+  }
+
+  .form-error {
+    display: block;
+    margin-top: 6px;
+    font-size: 12px;
+    color: #dc3545;
   }
 
   /* Image Upload Styles */
@@ -901,18 +840,6 @@
 </style>
 
 <script>
-  // Auto-generate slug from title
-  document.getElementById("id_title").addEventListener("input", function () {
-    const title = this.value;
-    const slug = title
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, "")
-      .replace(/\s+/g, "-")
-      .replace(/-+/g, "-")
-      .trim("-");
-    document.getElementById("id_slug").value = slug;
-  });
-
   // Image preview functions
   function previewImage(input, type) {
     if (input.files && input.files[0]) {
@@ -976,9 +903,6 @@
 
       placeholder.style.display = "none";
       preview.style.display = "block";
-
-      // Auto-check the tech pack checkbox
-      document.getElementById("id_has_techpack").checked = true;
     }
   }
 
@@ -990,9 +914,6 @@
     input.value = "";
     placeholder.style.display = "block";
     preview.style.display = "none";
-
-    // Uncheck the tech pack checkbox
-    document.getElementById("id_has_techpack").checked = false;
   }
 
   function formatFileSize(bytes) {
@@ -1001,89 +922,6 @@
     const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
-  }
-
-  // Form submission with progress
-  document
-    .getElementById("designForm")
-    .addEventListener("submit", function (e) {
-      e.preventDefault();
-
-      const formData = new FormData(this);
-      const progressDiv = document.getElementById("uploadProgress");
-      const progressFill = document.getElementById("progressFill");
-      const progressPercentage = document.getElementById("progressPercentage");
-      const progressStatus = document.getElementById("progressStatus");
-
-      // Show progress
-      progressDiv.style.display = "block";
-      this.style.display = "none";
-
-      // Create XMLHttpRequest for progress tracking
-      const xhr = new XMLHttpRequest();
-
-      xhr.upload.addEventListener("progress", function (e) {
-        if (e.lengthComputable) {
-          const percentComplete = (e.loaded / e.total) * 100;
-          progressFill.style.width = percentComplete + "%";
-          progressPercentage.textContent = Math.round(percentComplete) + "%";
-
-          if (percentComplete < 50) {
-            progressStatus.textContent = "Uploading images...";
-          } else if (percentComplete < 90) {
-            progressStatus.textContent = "Processing tech pack...";
-          } else {
-            progressStatus.textContent = "Finalizing upload...";
-          }
-        }
-      });
-
-      xhr.addEventListener("load", function () {
-        if (xhr.status === 200) {
-          progressStatus.textContent = "Upload complete! Redirecting...";
-          // Redirect to design detail or dashboard
-          window.location.href = "/dashboard/designs/";
-        } else {
-          progressStatus.textContent = "Upload failed. Please try again.";
-          progressDiv.style.display = "none";
-          document.getElementById("designForm").style.display = "block";
-        }
-      });
-
-      xhr.addEventListener("error", function () {
-        progressStatus.textContent =
-          "Upload failed. Please check your connection.";
-        progressDiv.style.display = "none";
-        document.getElementById("designForm").style.display = "block";
-      });
-
-      xhr.open("POST", this.action || window.location.href);
-      xhr.setRequestHeader("X-CSRFToken", formData.get("csrfmiddlewaretoken"));
-      xhr.send(formData);
-    });
-
-  // Save as draft function
-  function saveDraft() {
-    const formData = new FormData(document.getElementById("designForm"));
-    formData.set("published", "false"); // Ensure it's saved as draft
-
-    fetch(window.location.href, {
-      method: "POST",
-      body: formData,
-      headers: {
-        "X-CSRFToken": formData.get("csrfmiddlewaretoken"),
-      },
-    })
-      .then((response) => {
-        if (response.ok) {
-          alert("Draft saved successfully!");
-        } else {
-          alert("Failed to save draft. Please try again.");
-        }
-      })
-      .catch((error) => {
-        alert("Failed to save draft. Please check your connection.");
-      });
   }
 
   // Drag and drop functionality

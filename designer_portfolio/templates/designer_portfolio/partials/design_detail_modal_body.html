@@ -1,0 +1,259 @@
+<div class="design-detail-modal">
+  <div class="design-detail-hero">
+    {% if design.cover_image %}
+    <img
+      src="{{ design.cover_image.url }}"
+      alt="{{ design.title }}"
+      class="design-detail-cover"
+    />
+    {% else %}
+    <div class="design-detail-cover placeholder">No cover image</div>
+    {% endif %}
+
+    <div class="design-detail-meta">
+      <div><span class="meta-label">Season</span><span>{{ design.season|default:"?" }}</span></div>
+      <div><span class="meta-label">Year</span><span>{{ design.year }}</span></div>
+      <div>
+        <span class="meta-label">Status</span>
+        <span class="status-badge {% if design.published %}published{% else %}draft{% endif %}">
+          {% if design.published %}Published{% else %}Draft{% endif %}
+        </span>
+      </div>
+      <div><span class="meta-label">Created</span><span>{{ design.created_at|date:"M d, Y" }}</span></div>
+      <div><span class="meta-label">Updated</span><span>{{ design.updated_at|date:"M d, Y" }}</span></div>
+    </div>
+  </div>
+
+  {% if design.description %}
+  <div class="design-detail-section">
+    <h4>Description</h4>
+    <p>{{ design.description }}</p>
+  </div>
+  {% endif %}
+
+  <div class="design-detail-grid">
+    <div class="design-detail-section">
+      <h4>Specifications</h4>
+      <dl>
+        <div>
+          <dt>Fabric Details</dt>
+          <dd>{{ design.fabric_details|default:"?" }}</dd>
+        </div>
+        <div>
+          <dt>Color Palette</dt>
+          <dd>{{ design.color_palette|default:"?" }}</dd>
+        </div>
+        <div>
+          <dt>Size Range</dt>
+          <dd>{{ design.size_range|default:"?" }}</dd>
+        </div>
+        <div>
+          <dt>Target Price</dt>
+          <dd>
+            {% if design.target_price %}${{ design.target_price }}{% else %}?{% endif %}
+          </dd>
+        </div>
+      </dl>
+    </div>
+
+    <div class="design-detail-section">
+      <h4>Tech Pack</h4>
+      {% if design.techpack_pdf or design.techpack_excel %}
+      <ul class="techpack-list">
+        {% if design.techpack_pdf %}
+        <li>
+          <a href="{{ design.techpack_pdf.url }}" target="_blank">PDF download</a>
+        </li>
+        {% endif %}
+        {% if design.techpack_excel %}
+        <li>
+          <a href="{{ design.techpack_excel.url }}" target="_blank">Excel download</a>
+        </li>
+        {% endif %}
+      </ul>
+      {% else %}
+      <p class="muted">No tech pack files uploaded.</p>
+      {% endif %}
+
+      {% if design.production_notes %}
+      <div class="notes">
+        <h5>Production Notes</h5>
+        <p>{{ design.production_notes }}</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {% with gallery=design.images.all %}
+  {% if gallery %}
+  <div class="design-detail-section">
+    <h4>Gallery</h4>
+    <div class="design-detail-gallery">
+      {% for image in gallery %}
+      <img src="{{ image.image.url }}" alt="{{ design.title }} image {{ forloop.counter }}" />
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+  {% endwith %}
+</div>
+
+<style>
+  .design-detail-modal {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .design-detail-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    gap: 20px;
+    align-items: stretch;
+  }
+
+  .design-detail-cover {
+    width: 100%;
+    border-radius: 12px;
+    object-fit: cover;
+    height: 260px;
+    background: #f8f9fa;
+  }
+
+  .design-detail-cover.placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #9ca3af;
+    font-size: 14px;
+    border: 1px dashed #d1d5db;
+  }
+
+  .design-detail-meta {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 20px;
+    display: grid;
+    gap: 12px;
+  }
+
+  .design-detail-meta .meta-label {
+    display: block;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #6b7280;
+    margin-bottom: 4px;
+  }
+
+  .status-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 16px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .status-badge.published {
+    background: rgba(40, 167, 69, 0.12);
+    color: #1f7a3d;
+  }
+
+  .status-badge.draft {
+    background: rgba(255, 193, 7, 0.15);
+    color: #8a6d3b;
+  }
+
+  .design-detail-section h4 {
+    margin: 0 0 12px 0;
+    color: #1f2937;
+  }
+
+  .design-detail-section p {
+    margin: 0;
+    color: #4b5563;
+    line-height: 1.6;
+  }
+
+  .design-detail-grid {
+    display: grid;
+    gap: 20px;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  }
+
+  dl {
+    margin: 0;
+    display: grid;
+    gap: 12px;
+  }
+
+  dl div {
+    display: grid;
+    gap: 4px;
+  }
+
+  dt {
+    font-size: 13px;
+    text-transform: uppercase;
+    color: #6b7280;
+    letter-spacing: 0.04em;
+  }
+
+  dd {
+    margin: 0;
+    color: #374151;
+    font-weight: 500;
+  }
+
+  .techpack-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 12px 0;
+  }
+
+  .techpack-list li + li {
+    margin-top: 8px;
+  }
+
+  .techpack-list a {
+    color: #2563eb;
+    text-decoration: none;
+  }
+
+  .techpack-list a:hover {
+    text-decoration: underline;
+  }
+
+  .muted {
+    color: #9ca3af;
+  }
+
+  .notes h5 {
+    margin: 12px 0 8px 0;
+    font-size: 14px;
+    color: #1f2937;
+  }
+
+  .design-detail-gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 12px;
+  }
+
+  .design-detail-gallery img {
+    width: 100%;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 8px;
+  }
+
+  @media (max-width: 768px) {
+    .design-detail-hero {
+      grid-template-columns: 1fr;
+    }
+
+    .design-detail-cover {
+      height: 200px;
+    }
+  }
+</style>

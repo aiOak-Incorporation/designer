@@ -1,4 +1,6 @@
-from django.shortcuts import render, redirect
+import os
+
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.views.generic import TemplateView, DetailView, ListView
@@ -17,7 +19,7 @@ from django.utils import timezone
 from datetime import timedelta
 from django.db import transaction
 from django.db.models import Q
-from .forms import DesignerSignUpForm, DesignerLoginForm
+from .forms import DesignerSignUpForm, DesignerLoginForm, DesignUploadForm
 from .models import (
     DesignerProfile,
     SubscriptionPlan,
@@ -25,7 +27,9 @@ from .models import (
     Design,
     Collection,
     Event,
+    DesignImage,
 )
+from django.template.loader import render_to_string
 
 def signup_view(request):
     if request.method == "POST":
@@ -167,10 +171,17 @@ class DesignerDashboardView(LoginRequiredMixin, TemplateView):
             user_designs_qs = Design.objects.filter(designer=user).order_by("-created_at")
             recent_designs = list(user_designs_qs[:8])
             total_designs = user_designs_qs.count()
+            designs_with_techpack_count = user_designs_qs.filter(
+                (Q(techpack_pdf__isnull=False) & ~Q(techpack_pdf=""))
+                | (Q(techpack_excel__isnull=False) & ~Q(techpack_excel=""))
+            ).count()
+            published_designs_count = user_designs_qs.filter(published=True).count()
         except Exception as e:
             # Fallback if there's an issue with Design model
             recent_designs = []
             total_designs = 0
+            designs_with_techpack_count = 0
+            published_designs_count = 0
 
         try:
             total_collections = Collection.objects.count()
@@ -196,6 +207,8 @@ class DesignerDashboardView(LoginRequiredMixin, TemplateView):
                 "user_designs": recent_designs,
                 "recent_designs": recent_designs,
                 "recent_collections": recent_collections,
+                "designs_with_techpack_count": designs_with_techpack_count,
+                "published_designs_count": published_designs_count,
             }
         )
 
@@ -355,7 +368,7 @@ class DesignerRegistrationView(APIView):
             def send_registration_emails():
                 # Welcome email to designer
                 send_mail(
-                    subject="Welcome to designer — Your Account Is Ready",
+                    subject="Welcome to designer ? Your Account Is Ready",
                     message=(
                         f"Hello {username},\n\n"
                         "Thanks for registering as a designer with designer.\n"
@@ -371,7 +384,7 @@ class DesignerRegistrationView(APIView):
                 owner_email = getattr(settings, "ADMIN_EMAIL", None)
                 if owner_email:
                     send_mail(
-                        subject="New Designer Registration — Review Needed",
+                        subject="New Designer Registration ? Review Needed",
                         message=(
                             "A new designer has registered and is pending approval.\n\n"
                             f"Username: {username}\n"
@@ -407,8 +420,15 @@ def designer_design_edit_view(request, design_id):
 def designer_design_delete_view(request, design_id):
     return render(request, "designer_portfolio/designer_design_delete.html", {})
 
+@login_required
 def designer_design_detail_api(request, design_id):
-    return JsonResponse({"status": "ok"})
+    design = get_object_or_404(Design, id=design_id, designer=request.user)
+    modal_html = render_to_string(
+        "designer_portfolio/partials/design_detail_modal_body.html",
+        {"design": design},
+        request=request,
+    )
+    return JsonResponse({"status": "ok", "title": design.title, "html": modal_html})
 
 def subscription_dashboard(request):
     return render(request, "designer_portfolio/subscription_dashboard.html", {})
@@ -459,18 +479,28 @@ def designer_designs_view(request):
             next_billing_date=trial_end,
         )
 
-    designs = Design.objects.filter(designer=request.user).order_by("-created_at")
+    designs_qs = Design.objects.filter(designer=request.user).order_by("-created_at")
     available_years = (
-        designs.values_list("year", flat=True).distinct().order_by("-year")
+        designs_qs.values_list("year", flat=True).distinct().order_by("-year")
     )
+    total_designs = designs_qs.count()
+    designs_with_techpack_count = designs_qs.filter(
+        (Q(techpack_pdf__isnull=False) & ~Q(techpack_pdf=""))
+        | (Q(techpack_excel__isnull=False) & ~Q(techpack_excel=""))
+    ).count()
+    published_designs_count = designs_qs.filter(published=True).count()
 
     return render(
         request,
         "designer_portfolio/designer_designs.html",
         {
             "current_section": "designs",
-            "designs": designs,
+            "designs": designs_qs,
             "available_years": available_years,
+            "total_designs": total_designs,
+            "designs_with_techpack_count": designs_with_techpack_count,
+            "published_designs_count": published_designs_count,
+            "recent_designs": list(designs_qs[:6]),
         },
     )
 
@@ -489,13 +519,65 @@ def designer_design_create_view(request):
             next_billing_date=trial_end,
         )
 
+    design_queryset = Design.objects.filter(designer=request.user).order_by("-created_at")
+
+    if request.method == "POST":
+        form = DesignUploadForm(request.POST, request.FILES)
+        if form.is_valid():
+            design = form.save(commit=False)
+            design.designer = request.user
+
+            techpack_pdf_file = request.FILES.get("techpack_pdf")
+            if techpack_pdf_file:
+                design.techpack_pdf = techpack_pdf_file
+
+            techpack_excel_file = request.FILES.get("techpack_excel")
+            if techpack_excel_file:
+                design.techpack_excel = techpack_excel_file
+
+            legacy_techpack_file = request.FILES.get("techpack_file")
+            if legacy_techpack_file:
+                extension = os.path.splitext(legacy_techpack_file.name.lower())[1]
+                if extension == ".pdf":
+                    design.techpack_pdf = legacy_techpack_file
+                elif extension in {".xls", ".xlsx"}:
+                    design.techpack_excel = legacy_techpack_file
+
+            design.save()
+
+            additional_images = request.FILES.getlist("additional_images")
+            for order, image_file in enumerate(additional_images):
+                DesignImage.objects.create(design=design, image=image_file, order=order)
+
+            messages.success(request, "Your design has been added to your portfolio.")
+            return redirect("designer_designs")
+        else:
+            messages.error(request, "Please correct the errors below to continue.")
+    else:
+        form = DesignUploadForm(
+            initial={
+                "year": timezone.now().year,
+                "published": True,
+            }
+        )
+
+    context = {
+        "current_section": "designs",
+        "current_year": timezone.now().year,
+        "form": form,
+        "total_designs": design_queryset.count(),
+        "designs_with_techpack_count": design_queryset.filter(
+            (Q(techpack_pdf__isnull=False) & ~Q(techpack_pdf=""))
+            | (Q(techpack_excel__isnull=False) & ~Q(techpack_excel=""))
+        ).count(),
+        "published_designs_count": design_queryset.filter(published=True).count(),
+        "recent_designs": list(design_queryset[:6]),
+    }
+
     return render(
         request,
         "designer_portfolio/designer_design_create.html",
-        {
-            "current_section": "designs",
-            "current_year": timezone.now().year,
-        },
+        context,
     )
 
 @login_required
