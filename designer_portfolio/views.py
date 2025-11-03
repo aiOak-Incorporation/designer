@@ -1,12 +1,18 @@
+import base64
+import json
+
+from datetime import timedelta
+
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.views.generic import TemplateView, DetailView, ListView
 from django.contrib.auth.views import LoginView
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.contrib.auth import login, authenticate
+from django.contrib.auth import login, authenticate, get_user_model
 from django.http import JsonResponse
 from django.views.decorators.csrf import requires_csrf_token
+from django.views.decorators.http import require_POST
 from django.core.mail import send_mail
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -14,7 +20,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.core.validators import URLValidator
 from django.utils import timezone
-from datetime import timedelta
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.db import transaction
 from django.db.models import Q
 from .forms import DesignerSignUpForm, DesignerLoginForm
@@ -25,7 +31,54 @@ from .models import (
     Design,
     Collection,
     Event,
+    WebAuthnCredential,
 )
+
+from webauthn import (
+    generate_authentication_options,
+    generate_registration_options,
+    options_to_json,
+    verify_authentication_response,
+    verify_registration_response,
+)
+from webauthn.helpers.structs import (
+    AttestationConveyancePreference,
+    AuthenticationCredential,
+    AuthenticatorSelectionCriteria,
+    PublicKeyCredentialDescriptor,
+    PublicKeyCredentialUserEntity,
+    RegistrationCredential,
+    UserVerificationRequirement,
+)
+
+
+def _base64url_from_bytes(value: bytes) -> str:
+    if not isinstance(value, (bytes, bytearray)):
+        raise TypeError("value must be bytes")
+    return base64.urlsafe_b64encode(value).decode("ascii").rstrip("=")
+
+
+def _bytes_from_base64url(data: str) -> bytes:
+    if not isinstance(data, str):
+        raise TypeError("data must be str")
+    padding = "=" * (-len(data) % 4)
+    return base64.urlsafe_b64decode(data + padding)
+
+
+def _find_user_by_identifier(identifier: str):
+    identifier = (identifier or "").strip()
+    if not identifier:
+        return None
+
+    UserModel = get_user_model()
+
+    try:
+        return UserModel.objects.get(username__iexact=identifier)
+    except UserModel.DoesNotExist:
+        try:
+            return UserModel.objects.get(email__iexact=identifier)
+        except UserModel.DoesNotExist:
+            return None
 
 def signup_view(request):
     if request.method == "POST":
@@ -355,7 +408,7 @@ class DesignerRegistrationView(APIView):
             def send_registration_emails():
                 # Welcome email to designer
                 send_mail(
-                    subject="Welcome to designer — Your Account Is Ready",
+                    subject="Welcome to designer ? Your Account Is Ready",
                     message=(
                         f"Hello {username},\n\n"
                         "Thanks for registering as a designer with designer.\n"
@@ -371,7 +424,7 @@ class DesignerRegistrationView(APIView):
                 owner_email = getattr(settings, "ADMIN_EMAIL", None)
                 if owner_email:
                     send_mail(
-                        subject="New Designer Registration — Review Needed",
+                        subject="New Designer Registration ? Review Needed",
                         message=(
                             "A new designer has registered and is pending approval.\n\n"
                             f"Username: {username}\n"
@@ -388,6 +441,232 @@ class DesignerRegistrationView(APIView):
             {"message": "Registration successful. You can now sign in."},
             status=status.HTTP_201_CREATED,
         )
+
+
+@login_required
+@require_POST
+def webauthn_register_options(request):
+    user = request.user
+
+    try:
+        payload = json.loads(request.body.decode("utf-8")) if request.body else {}
+    except (TypeError, ValueError):
+        payload = {}
+
+    nickname = (payload.get("nickname") or "").strip()
+
+    exclude = [
+        PublicKeyCredentialDescriptor(id=cred.credential_id)
+        for cred in user.webauthn_credentials.all()
+    ]
+
+    selection = AuthenticatorSelectionCriteria(
+        user_verification=UserVerificationRequirement.REQUIRED,
+    )
+
+    options = generate_registration_options(
+        rp_id=settings.WEBAUTHN_RP_ID,
+        rp_name=settings.WEBAUTHN_RP_NAME,
+        user=PublicKeyCredentialUserEntity(
+            id=str(user.pk).encode("utf-8"),
+            name=user.username,
+            display_name=user.get_full_name() or user.username,
+        ),
+        attestation=AttestationConveyancePreference.NONE,
+        authenticator_selection=selection,
+        exclude_credentials=exclude,
+    )
+
+    request.session["webauthn_registration_challenge"] = _base64url_from_bytes(options.challenge)
+    request.session["webauthn_registration_nickname"] = nickname
+    request.session.modified = True
+
+    return JsonResponse(json.loads(options_to_json(options)))
+
+
+@login_required
+@require_POST
+def webauthn_register_verify(request):
+    expected_challenge = request.session.get("webauthn_registration_challenge")
+    if not expected_challenge:
+        return JsonResponse({"error": "missing_challenge"}, status=400)
+
+    try:
+        payload = json.loads(request.body.decode("utf-8"))
+    except (TypeError, ValueError):
+        return JsonResponse({"error": "invalid_payload"}, status=400)
+
+    try:
+        credential = RegistrationCredential.parse_raw(json.dumps(payload))
+    except Exception as exc:  # noqa: BLE001
+        return JsonResponse({"error": "invalid_credential", "detail": str(exc)}, status=400)
+
+    try:
+        verification = verify_registration_response(
+            credential=credential,
+            expected_challenge=expected_challenge,
+            expected_rp_id=settings.WEBAUTHN_RP_ID,
+            expected_origin=settings.WEBAUTHN_ORIGIN,
+            require_user_verification=True,
+            allow_insecure_localhost=settings.WEBAUTHN_ALLOW_INSECURE_LOCALHOST,
+        )
+    except Exception as exc:  # noqa: BLE001
+        request.session.pop("webauthn_registration_challenge", None)
+        request.session.pop("webauthn_registration_nickname", None)
+        request.session.modified = True
+        return JsonResponse({"error": "registration_failed", "detail": str(exc)}, status=400)
+
+    transports = getattr(credential.response, "transports", None) or []
+    nickname = request.session.pop("webauthn_registration_nickname", "").strip()
+
+    credential_obj, _ = WebAuthnCredential.objects.update_or_create(
+        user=request.user,
+        credential_id=verification.credential_id,
+        defaults={
+            "public_key": verification.credential_public_key,
+            "sign_count": verification.sign_count,
+            "transports": transports,
+            "nickname": nickname,
+        },
+    )
+
+    request.session.pop("webauthn_registration_challenge", None)
+    request.session.modified = True
+
+    return JsonResponse(
+        {
+            "status": "ok",
+            "credential_id": _base64url_from_bytes(verification.credential_id),
+            "credential_pk": credential_obj.pk,
+        }
+    )
+
+
+@require_POST
+def webauthn_authenticate_options(request):
+    try:
+        payload = json.loads(request.body.decode("utf-8")) if request.body else {}
+    except (TypeError, ValueError):
+        payload = {}
+
+    identifier = payload.get("username") or payload.get("email")
+    user = _find_user_by_identifier(identifier)
+
+    if not user or not user.is_active:
+        return JsonResponse({"error": "user_not_found"}, status=404)
+
+    credentials = list(WebAuthnCredential.objects.filter(user=user))
+    if not credentials:
+        return JsonResponse({"error": "no_passkeys"}, status=400)
+
+    options = generate_authentication_options(
+        rp_id=settings.WEBAUTHN_RP_ID,
+        allow_credentials=[
+            PublicKeyCredentialDescriptor(id=cred.credential_id)
+            for cred in credentials
+        ],
+        user_verification=UserVerificationRequirement.REQUIRED,
+    )
+
+    request.session["webauthn_authentication_challenge"] = _base64url_from_bytes(options.challenge)
+    request.session["webauthn_authentication_user_id"] = user.pk
+    request.session.modified = True
+
+    return JsonResponse(json.loads(options_to_json(options)))
+
+
+@require_POST
+def webauthn_authenticate_verify(request):
+    expected_challenge = request.session.get("webauthn_authentication_challenge")
+    user_id = request.session.get("webauthn_authentication_user_id")
+
+    if not expected_challenge or not user_id:
+        return JsonResponse({"error": "missing_challenge"}, status=400)
+
+    try:
+        payload = json.loads(request.body.decode("utf-8"))
+    except (TypeError, ValueError):
+        return JsonResponse({"error": "invalid_payload"}, status=400)
+
+    remember_me = bool(payload.get("remember_me"))
+    next_url = payload.get("next") or ""
+
+    try:
+        credential = AuthenticationCredential.parse_raw(json.dumps(payload))
+    except Exception as exc:  # noqa: BLE001
+        return JsonResponse({"error": "invalid_credential", "detail": str(exc)}, status=400)
+
+    UserModel = get_user_model()
+    try:
+        user = UserModel.objects.get(pk=user_id, is_active=True)
+    except UserModel.DoesNotExist:
+        request.session.pop("webauthn_authentication_challenge", None)
+        request.session.pop("webauthn_authentication_user_id", None)
+        request.session.modified = True
+        return JsonResponse({"error": "user_not_found"}, status=404)
+
+    raw_id = payload.get("rawId")
+    if not raw_id:
+        return JsonResponse({"error": "missing_credential_id"}, status=400)
+
+    credential_id = _bytes_from_base64url(raw_id)
+
+    try:
+        stored_credential = WebAuthnCredential.objects.get(user=user, credential_id=credential_id)
+    except WebAuthnCredential.DoesNotExist:
+        return JsonResponse({"error": "credential_not_found"}, status=404)
+
+    try:
+        verification = verify_authentication_response(
+            credential=credential,
+            expected_challenge=expected_challenge,
+            expected_rp_id=settings.WEBAUTHN_RP_ID,
+            expected_origin=settings.WEBAUTHN_ORIGIN,
+            credential_public_key=stored_credential.public_key,
+            credential_current_sign_count=stored_credential.sign_count,
+            require_user_verification=True,
+            allow_insecure_localhost=settings.WEBAUTHN_ALLOW_INSECURE_LOCALHOST,
+        )
+    except Exception as exc:  # noqa: BLE001
+        return JsonResponse({"error": "authentication_failed", "detail": str(exc)}, status=400)
+
+    stored_credential.sign_count = verification.new_sign_count
+    stored_credential.last_used_at = timezone.now()
+    stored_credential.save(update_fields=["sign_count", "last_used_at", "updated_at"])
+
+    request.session.pop("webauthn_authentication_challenge", None)
+    request.session.pop("webauthn_authentication_user_id", None)
+    request.session.modified = True
+
+    login(request, user, backend="django.contrib.auth.backends.ModelBackend")
+
+    if remember_me:
+        session_age_seconds = getattr(settings, "REMEMBER_ME_SESSION_AGE", 60 * 60 * 24 * 30)
+        request.session.set_expiry(session_age_seconds)
+    else:
+        request.session.set_expiry(0)
+
+    redirect_to = settings.LOGIN_REDIRECT_URL
+    if next_url and url_has_allowed_host_and_scheme(
+        next_url,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure(),
+    ):
+        redirect_to = next_url
+
+    return JsonResponse({"status": "ok", "redirect_url": redirect_to})
+
+
+@login_required
+@require_POST
+def webauthn_delete_credential(request, credential_id):
+    try:
+        credential = request.user.webauthn_credentials.get(pk=credential_id)
+    except WebAuthnCredential.DoesNotExist:
+        return JsonResponse({"error": "not_found"}, status=404)
+
+    credential.delete()
+    return JsonResponse({"status": "ok"})
 # Placeholder functions
 def upload_design(request):
     return render(request, "designer_portfolio/upload_design.html", {})
@@ -515,6 +794,8 @@ def designer_about_me_view(request):
             next_billing_date=trial_end,
         )
 
+    passkeys = list(user.webauthn_credentials.order_by("created_at"))
+
     if request.method == "POST":
         # Update basic user fields
         first_name = (request.POST.get("first_name") or user.first_name).strip()
@@ -571,6 +852,7 @@ def designer_about_me_view(request):
             "current_section": "about",
             "designer_profile": profile,
             "total_designs": total_designs,
+            "passkeys": passkeys,
         },
     )
 

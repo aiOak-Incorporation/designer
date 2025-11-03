@@ -367,3 +367,29 @@ SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = os.getenv("SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET")
 SOCIAL_AUTH_LOGIN_REDIRECT_URL = "/dashboard/"
 SOCIAL_AUTH_LOGIN_ERROR_URL = "/accounts/login/"
 SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE = ["email", "profile"]
+
+
+# --- WebAuthn / Passkeys ---
+_derived_rp_id = os.getenv("WEBAUTHN_RP_ID")
+if not _derived_rp_id:
+    if BASE_URL_SERVER:
+        _derived_rp_id = urlparse(BASE_URL_SERVER).hostname or "localhost"
+    else:
+        _derived_rp_id = "localhost"
+
+WEBAUTHN_RP_ID = _derived_rp_id
+WEBAUTHN_RP_NAME = os.getenv("WEBAUTHN_RP_NAME", "AIOAK Designer")
+
+if os.getenv("WEBAUTHN_ORIGIN"):
+    WEBAUTHN_ORIGIN = os.getenv("WEBAUTHN_ORIGIN").rstrip("/")
+elif BASE_URL_SERVER:
+    WEBAUTHN_ORIGIN = BASE_URL_SERVER.rstrip("/")
+elif DEBUG:
+    WEBAUTHN_ORIGIN = "http://localhost:8000"
+else:
+    WEBAUTHN_ORIGIN = f"https://{WEBAUTHN_RP_ID}"
+
+WEBAUTHN_ALLOW_INSECURE_LOCALHOST = os.getenv(
+    "WEBAUTHN_ALLOW_INSECURE_LOCALHOST",
+    "True" if DEBUG else "False",
+) == "True"

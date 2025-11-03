@@ -111,6 +111,7 @@ designer{% endblock %} {% block content %}
         Use Face/Passkey
       </button>
     </div>
+    <div id="passkeyStatus" style="min-height: 18px; font-size: 13px; color: #555; margin-top: -6px; margin-bottom: 4px;" aria-live="polite"></div>
 
     <button
       type="submit"
@@ -281,24 +282,146 @@ designer{% endblock %} {% block content %}
       });
     }
 
-    // Basic Passkey/Face Login stub using WebAuthn navigator.credentials.get
-    const faceBtn = document.getElementById('faceLoginBtn');
-    if (faceBtn && window.PublicKeyCredential) {
-      faceBtn.addEventListener('click', async function () {
-        try {
-          // Placeholder: In production, fetch challenge/options from server
-          // and call navigator.credentials.get({ publicKey: options }) then
-          // POST the assertion to a server endpoint for verification.
-          alert('Passkey/Face login coming soon. Your device supports WebAuthn.');
-        } catch (e) {
-          console.error(e);
-          alert('Passkey/Face login is not available right now.');
-        }
+    function bufferToBase64Url(buffer) {
+      const bytes = new Uint8Array(buffer);
+      let binary = '';
+      bytes.forEach((b) => {
+        binary += String.fromCharCode(b);
       });
-    } else if (faceBtn) {
-      faceBtn.disabled = true;
-      faceBtn.title = 'Passkey not supported in this browser';
+      return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
     }
+
+    function base64UrlToBuffer(base64url) {
+      const padding = '='.repeat((4 - (base64url.length % 4)) % 4);
+      const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/') + padding;
+      const binary = atob(base64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i += 1) {
+        bytes[i] = binary.charCodeAt(i);
+      }
+      return bytes.buffer;
+    }
+
+    const statusEl = document.getElementById('passkeyStatus');
+    function setStatus(message, tone = 'info') {
+      if (!statusEl) {
+        return;
+      }
+      statusEl.textContent = message || '';
+      const colors = {
+        error: '#b00020',
+        success: '#056608',
+        info: '#555555',
+      };
+      statusEl.style.color = colors[tone] || colors.info;
+    }
+
+    const csrfInput = document.querySelector('input[name="csrfmiddlewaretoken"]');
+    const csrfToken = csrfInput ? csrfInput.value : null;
+
+    async function postJson(url, payload) {
+      const response = await fetch(url, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: Object.assign({ 'Content-Type': 'application/json' }, csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
+        body: JSON.stringify(payload || {}),
+      });
+      let data;
+      try {
+        data = await response.json();
+      } catch (err) {
+        data = {};
+      }
+      if (!response.ok) {
+        const error = new Error((data && (data.detail || data.error)) || response.statusText || 'Request failed');
+        error.response = data;
+        error.status = response.status;
+        throw error;
+      }
+      return data;
+    }
+
+    const faceBtn = document.getElementById('faceLoginBtn');
+    if (!faceBtn) {
+      return;
+    }
+
+    if (!window.PublicKeyCredential) {
+      faceBtn.disabled = true;
+      faceBtn.title = 'Passkeys are not supported in this browser yet';
+      setStatus('Passkeys are not supported on this browser. Please update your device or use the password form.', 'error');
+      return;
+    }
+
+    const usernameInput = document.getElementById('id_username');
+    const rememberCheckbox = document.getElementById('id_remember_me');
+    const nextInput = document.querySelector('input[name="next"]');
+
+    faceBtn.addEventListener('click', async () => {
+      const identifier = usernameInput ? usernameInput.value.trim() : '';
+      if (!identifier) {
+        setStatus('Enter your username or email before using a passkey.', 'error');
+        if (usernameInput) {
+          usernameInput.focus();
+        }
+        return;
+      }
+
+      try {
+        faceBtn.disabled = true;
+        setStatus('Preparing a secure challenge?');
+
+        const optionsResponse = await postJson('/webauthn/authenticate/options/', { username: identifier });
+        const publicKey = optionsResponse.publicKey || optionsResponse;
+
+        publicKey.challenge = base64UrlToBuffer(publicKey.challenge);
+        if (publicKey.allowCredentials) {
+          publicKey.allowCredentials = publicKey.allowCredentials.map((item) => Object.assign({}, item, { id: base64UrlToBuffer(item.id) }));
+        }
+
+        setStatus('Verify with Face ID, Touch ID, or your device security?');
+        const assertion = await navigator.credentials.get({ publicKey });
+
+        const payload = {
+          id: assertion.id,
+          rawId: bufferToBase64Url(assertion.rawId),
+          type: assertion.type,
+          response: {
+            clientDataJSON: bufferToBase64Url(assertion.response.clientDataJSON),
+            authenticatorData: bufferToBase64Url(assertion.response.authenticatorData),
+            signature: bufferToBase64Url(assertion.response.signature),
+            userHandle: assertion.response.userHandle ? bufferToBase64Url(assertion.response.userHandle) : null,
+          },
+          clientExtensionResults: assertion.getClientExtensionResults(),
+          authenticatorAttachment: assertion.authenticatorAttachment || null,
+          remember_me: rememberCheckbox ? rememberCheckbox.checked : false,
+          next: nextInput ? nextInput.value : null,
+          username: identifier,
+        };
+
+        setStatus('Verifying your passkey?');
+        const verification = await postJson('/webauthn/authenticate/verify/', payload);
+        setStatus('Success! Signing you in?', 'success');
+        window.location.assign(verification.redirect_url || '/');
+      } catch (error) {
+        if (error && error.name === 'NotAllowedError') {
+          setStatus('Passkey sign-in was cancelled.', 'info');
+        } else if (error && error.response && error.response.error) {
+          const code = error.response.error;
+          const friendly = {
+            user_not_found: 'We could not find an account for that username or email.',
+            no_passkeys: 'No passkeys are registered for this account yet. Sign in with your password, then add a passkey from your dashboard.',
+            missing_challenge: 'Please refresh the page and try again.',
+          };
+          setStatus(friendly[code] || code.replace(/_/g, ' '), 'error');
+        } else {
+          setStatus(error.message || 'Passkey sign-in failed. Please try again.', 'error');
+        }
+        console.error(error);
+      } finally {
+        faceBtn.disabled = false;
+      }
+    });
   })();
 </script>
 

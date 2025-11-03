@@ -266,6 +266,26 @@ class DesignerProfile(models.Model):
 
 
 # ---------------- Subscription Models ----------------
+class WebAuthnCredential(TimeStampedModel):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="webauthn_credentials")
+    credential_id = models.BinaryField(unique=True)
+    public_key = models.BinaryField()
+    sign_count = models.PositiveBigIntegerField(default=0)
+    transports = models.JSONField(default=list, blank=True)
+    nickname = models.CharField(max_length=150, blank=True)
+    attestation_format = models.CharField(max_length=50, blank=True)
+    last_used_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = "WebAuthn Credential"
+        verbose_name_plural = "WebAuthn Credentials"
+
+    def __str__(self):
+        if self.nickname:
+            return f"{self.nickname} ({self.user.username})"
+        return f"{self.user.username} WebAuthn credential"
+
+
 class SubscriptionPlan(models.Model):
     PLAN_TYPES = [
         ('weekly', 'Weekly'),
