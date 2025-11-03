@@ -86,6 +86,13 @@ urlpatterns = [
     path("payment/paypal/create-subscription/", views.create_paypal_subscription, name="create_paypal_subscription"),
     path("payment/paypal/webhook/", views.paypal_webhook, name="paypal_webhook"),
 
+    # WebAuthn / Passkey endpoints
+    path("webauthn/register/options/", views.webauthn_register_options, name="webauthn_register_options"),
+    path("webauthn/register/verify/", views.webauthn_register_verify, name="webauthn_register_verify"),
+    path("webauthn/authenticate/options/", views.webauthn_authenticate_options, name="webauthn_authenticate_options"),
+    path("webauthn/authenticate/verify/", views.webauthn_authenticate_verify, name="webauthn_authenticate_verify"),
+    path("webauthn/credentials/<int:credential_id>/delete/", views.webauthn_delete_credential, name="webauthn_delete_credential"),
+
      # ✅ Techpack generator route
     path("generate-techpack/<slug:slug>/", views.generate_techpack, name="generate_techpack"),
 ]

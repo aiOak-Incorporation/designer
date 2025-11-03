@@ -180,6 +180,39 @@
         </div>
       </div>
 
+      <!-- Passkey Security Section -->
+      <div class="form-section passkey-section">
+        <h3 class="section-title">Security &amp; Passkeys</h3>
+        <p class="section-subtitle">Register a passkey to sign in with Face ID, Touch ID, or your device PIN.</p>
+        <div id="passkeyStatus" class="passkey-status" role="status" aria-live="polite"></div>
+
+        {% if passkeys %}
+          <ul class="passkey-list" id="passkeyList">
+            {% for credential in passkeys %}
+              <li class="passkey-item" data-passkey-id="{{ credential.id }}">
+                <div class="passkey-details">
+                  <span class="passkey-name">{{ credential.nickname|default:"Passkey" }}</span>
+                  <span class="passkey-meta">
+                    Added {{ credential.created_at|date:"M j, Y" }}
+                    {% if credential.last_used_at %}
+                      · Last used {{ credential.last_used_at|date:"M j, Y H:i" }}
+                    {% endif %}
+                  </span>
+                </div>
+                <button type="button" class="btn-passkey-remove" data-passkey-id="{{ credential.id }}">Remove</button>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="passkey-empty">No passkeys yet. Add one below to enable passwordless login.</p>
+          <ul class="passkey-list" id="passkeyList" hidden></ul>
+        {% endif %}
+
+        <div class="passkey-actions">
+          <button type="button" class="btn btn-secondary" id="createPasskeyBtn">➕ Add Passkey</button>
+        </div>
+      </div>
+
       <!-- Hidden file input for profile image -->
       <input type="file" id="id_profile_image" name="profile_image" 
              accept="image/*" style="display: none;" onchange="previewImage(this)">
@@ -435,6 +468,83 @@ textarea.form-control {
   font-size: 14px;
 }
 
+.passkey-section .section-subtitle {
+  margin-top: -8px;
+  margin-bottom: 18px;
+  color: #666;
+  font-size: 14px;
+}
+
+.passkey-status {
+  min-height: 20px;
+  font-size: 13px;
+  color: #555;
+  margin-bottom: 12px;
+}
+
+.passkey-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 20px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.passkey-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f8f9fc;
+  border: 1px solid #e1e5ef;
+  border-radius: 10px;
+  padding: 12px 16px;
+  gap: 16px;
+}
+
+.passkey-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.passkey-name {
+  font-weight: 600;
+  color: #280768;
+}
+
+.passkey-meta {
+  font-size: 12px;
+  color: #666;
+}
+
+.passkey-empty {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 16px;
+}
+
+.passkey-actions {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.btn-passkey-remove {
+  background: transparent;
+  border: 1px solid #e55353;
+  color: #e55353;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-passkey-remove:hover {
+  background: #e55353;
+  color: white;
+}
+
 .form-actions {
   display: flex;
   gap: 15px;
@@ -561,5 +671,199 @@ function autoSave() {
 document.querySelectorAll('.form-control').forEach(input => {
   input.addEventListener('input', autoSave);
 });
+
+const createPasskeyBtn = document.getElementById('createPasskeyBtn');
+const passkeyStatus = document.getElementById('passkeyStatus');
+const passkeyList = document.getElementById('passkeyList');
+const csrfInput = document.querySelector('input[name="csrfmiddlewaretoken"]');
+const csrfToken = csrfInput ? csrfInput.value : null;
+
+function setPasskeyStatus(message, tone = 'info') {
+  if (!passkeyStatus) {
+    return;
+  }
+  passkeyStatus.textContent = message || '';
+  const colors = {
+    error: '#b00020',
+    success: '#056608',
+    info: '#555555',
+  };
+  passkeyStatus.style.color = colors[tone] || colors.info;
+}
+
+function bufferToBase64Url(buffer) {
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  bytes.forEach((b) => {
+    binary += String.fromCharCode(b);
+  });
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+}
+
+function base64UrlToBuffer(base64url) {
+  const padding = '='.repeat((4 - (base64url.length % 4)) % 4);
+  const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/') + padding;
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes.buffer;
+}
+
+async function postPasskeyJson(url, payload) {
+  const response = await fetch(url, {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: Object.assign({ 'Content-Type': 'application/json' }, csrfToken ? { 'X-CSRFToken': csrfToken } : {}),
+    body: JSON.stringify(payload || {}),
+  });
+  let data;
+  try {
+    data = await response.json();
+  } catch (error) {
+    data = {};
+  }
+  if (!response.ok) {
+    const err = new Error((data && (data.detail || data.error)) || response.statusText || 'Request failed');
+    err.response = data;
+    err.status = response.status;
+    throw err;
+  }
+  return data;
+}
+
+function attachRemoveHandlers() {
+  if (!passkeyList) {
+    return;
+  }
+  passkeyList.querySelectorAll('.btn-passkey-remove').forEach((button) => {
+    if (button.dataset.initialized === 'true') {
+      return;
+    }
+    button.dataset.initialized = 'true';
+    button.addEventListener('click', async () => {
+      const credentialId = button.getAttribute('data-passkey-id');
+      if (!credentialId) {
+        return;
+      }
+      if (!confirm('Remove this passkey? You will no longer be able to sign in with it.')) {
+        return;
+      }
+      try {
+        button.disabled = true;
+        setPasskeyStatus('Removing passkey…');
+        await postPasskeyJson(`/webauthn/credentials/${credentialId}/delete/`);
+        const item = passkeyList.querySelector(`[data-passkey-id="${credentialId}"]`);
+        if (item) {
+          item.remove();
+        }
+        if (!passkeyList.children.length) {
+          passkeyList.hidden = true;
+          if (!document.querySelector('.passkey-empty')) {
+            const emptyMsg = document.createElement('p');
+            emptyMsg.className = 'passkey-empty';
+            emptyMsg.textContent = 'No passkeys yet. Add one below to enable passwordless login.';
+            passkeyList.parentNode.insertBefore(emptyMsg, passkeyList);
+          }
+          setPasskeyStatus('Passkey removed. You can add a new one anytime.', 'info');
+        } else {
+          setPasskeyStatus('Passkey removed.', 'success');
+        }
+      } catch (error) {
+        console.error(error);
+        const message = error.response && error.response.error ? error.response.error : 'Unable to remove passkey right now.';
+        setPasskeyStatus(message, 'error');
+        button.disabled = false;
+      }
+    });
+  });
+}
+
+attachRemoveHandlers();
+
+if (createPasskeyBtn) {
+  if (!window.PublicKeyCredential) {
+    createPasskeyBtn.disabled = true;
+    createPasskeyBtn.textContent = 'Passkeys not supported on this device';
+    setPasskeyStatus('Passkeys are not supported on this browser. Try updating your device or using a compatible browser.', 'error');
+  } else {
+    createPasskeyBtn.addEventListener('click', async () => {
+      let nickname = 'My device';
+      const promptResponse = prompt('Give this passkey a name (optional)', nickname);
+      if (promptResponse === null) {
+        return;
+      }
+      nickname = promptResponse.trim();
+
+      try {
+        createPasskeyBtn.disabled = true;
+        setPasskeyStatus('Preparing a new passkey…');
+
+        const optionsResponse = await postPasskeyJson('/webauthn/register/options/', { nickname });
+        const publicKey = optionsResponse.publicKey || optionsResponse;
+
+        publicKey.challenge = base64UrlToBuffer(publicKey.challenge);
+        publicKey.user.id = base64UrlToBuffer(publicKey.user.id);
+        if (publicKey.excludeCredentials) {
+          publicKey.excludeCredentials = publicKey.excludeCredentials.map((cred) => Object.assign({}, cred, { id: base64UrlToBuffer(cred.id) }));
+        }
+
+        setPasskeyStatus('Complete the prompt on your device to finish adding the passkey…');
+        const credential = await navigator.credentials.create({ publicKey });
+
+        const payload = {
+          id: credential.id,
+          rawId: bufferToBase64Url(credential.rawId),
+          type: credential.type,
+          response: {
+            clientDataJSON: bufferToBase64Url(credential.response.clientDataJSON),
+            attestationObject: bufferToBase64Url(credential.response.attestationObject),
+            transports: credential.response.getTransports ? credential.response.getTransports() : undefined,
+          },
+          clientExtensionResults: credential.getClientExtensionResults(),
+          authenticatorAttachment: credential.authenticatorAttachment || null,
+        };
+
+        setPasskeyStatus('Saving your new passkey…');
+        const verification = await postPasskeyJson('/webauthn/register/verify/', payload);
+
+        const displayName = nickname || 'Passkey';
+        if (passkeyList && verification.credential_pk !== undefined) {
+          passkeyList.hidden = false;
+          const emptyMessage = document.querySelector('.passkey-empty');
+          if (emptyMessage) {
+            emptyMessage.remove();
+          }
+          const li = document.createElement('li');
+          li.className = 'passkey-item';
+          const credentialPk = verification.credential_pk;
+          li.setAttribute('data-passkey-id', credentialPk);
+          li.innerHTML = `
+            <div class="passkey-details">
+              <span class="passkey-name">${displayName}</span>
+              <span class="passkey-meta">Added just now</span>
+            </div>
+            <button type="button" class="btn-passkey-remove" data-passkey-id="${credentialPk}">Remove</button>
+          `;
+          passkeyList.appendChild(li);
+          attachRemoveHandlers();
+        }
+
+        setPasskeyStatus('Passkey added! You can now sign in without a password.', 'success');
+      } catch (error) {
+        if (error && error.name === 'NotAllowedError') {
+          setPasskeyStatus('Passkey creation was cancelled.', 'info');
+        } else {
+          console.error(error);
+          const message = error.response && error.response.error ? error.response.error : 'Could not add a passkey. Please try again.';
+          setPasskeyStatus(message, 'error');
+        }
+      } finally {
+        createPasskeyBtn.disabled = false;
+      }
+    });
+  }
+}
 </script>
 {% endblock %}
