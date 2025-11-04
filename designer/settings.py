@@ -19,13 +19,25 @@ if _env_file.exists():
 else:
     load_dotenv()
 
+
+def env_bool(name: str, default: bool = False) -> bool:
+    value = os.getenv(name)
+    if value is None or value == "":
+        return default
+    value = value.strip().lower()
+    if value in {"1", "true", "t", "yes", "y", "on"}:
+        return True
+    if value in {"0", "false", "f", "no", "n", "off"}:
+        return False
+    return default
+
 # Helpful flags derived from environment for consistent HTTPS behavior
 BASE_URL_SERVER = os.getenv("BASE_URL_SERVER", "")
 SERVER_URL_IS_HTTPS = BASE_URL_SERVER.lower().startswith("https://")
 
 # --- Core ---
 SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-change-this-in-production")
-DEBUG = os.getenv("DEBUG", "False") == "True"
+DEBUG = env_bool("DEBUG", default=False)
 
 ALLOWED_HOSTS = [
     "127.0.0.1",
@@ -49,20 +61,20 @@ CSRF_TRUSTED_ORIGINS = [
 
 # In development (DEBUG=True), do not require HTTPS for cookies to allow local testing,
 # unless the configured server URL is HTTPS (e.g., production .env but DEBUG left True).
-SESSION_COOKIE_SECURE = os.getenv(
+SESSION_COOKIE_SECURE = env_bool(
     "SESSION_COOKIE_SECURE",
-    "True" if (not DEBUG or SERVER_URL_IS_HTTPS) else "False",
-) == "True"
-CSRF_COOKIE_SECURE = os.getenv(
+    default=(not DEBUG or SERVER_URL_IS_HTTPS),
+)
+CSRF_COOKIE_SECURE = env_bool(
     "CSRF_COOKIE_SECURE",
-    "True" if (not DEBUG or SERVER_URL_IS_HTTPS) else "False",
-) == "True"
+    default=(not DEBUG or SERVER_URL_IS_HTTPS),
+)
 
 # Enforce HTTPS redirects by default in production or when BASE_URL_SERVER is HTTPS
-SECURE_SSL_REDIRECT = os.getenv(
+SECURE_SSL_REDIRECT = env_bool(
     "SECURE_SSL_REDIRECT",
-    "True" if (not DEBUG or SERVER_URL_IS_HTTPS) else "False",
-) == "True"
+    default=(not DEBUG or SERVER_URL_IS_HTTPS),
+)
 
 # Make local dev origins trusted for CSRF in DEBUG mode
 if DEBUG:
@@ -133,7 +145,7 @@ STATICFILES_DIRS = []
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # Use S3 for media in production to avoid losing uploads on deploys
-USE_S3_MEDIA = os.getenv("USE_S3_MEDIA", "False") == "True"
+USE_S3_MEDIA = env_bool("USE_S3_MEDIA", default=False)
 
 if USE_S3_MEDIA:
     AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID", "")
@@ -293,7 +305,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # --- Caching ---
 # Use Redis only when explicitly enabled to avoid DNS issues in environments
 # where a Redis hostname like "designer-redis" is not resolvable.
-USE_REDIS = os.getenv("USE_REDIS", "False") == "True"
+USE_REDIS = env_bool("USE_REDIS", default=False)
 redis_url = os.getenv("REDIS_URL") or os.getenv("CACHE_URL") or "redis://127.0.0.1:6379/1"
 
 if USE_REDIS:
@@ -332,7 +344,7 @@ else:
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.gmail.com")
 EMAIL_PORT = int(os.getenv("EMAIL_PORT", 587))
-EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True") == "True"
+EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", default=True)
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
 DEFAULT_FROM_EMAIL = "no-reply@designer.com"
@@ -355,10 +367,10 @@ REMEMBER_ME_SESSION_AGE = int(os.getenv("REMEMBER_ME_SESSION_AGE", 60 * 60 * 24 
 # --- Social Authentication (Google) ---
 SOCIAL_AUTH_URL_NAMESPACE = "social"
 # Force HTTPS redirects for social auth in production or when BASE_URL_SERVER is HTTPS
-SOCIAL_AUTH_REDIRECT_IS_HTTPS = os.getenv(
+SOCIAL_AUTH_REDIRECT_IS_HTTPS = env_bool(
     "SOCIAL_AUTH_REDIRECT_IS_HTTPS",
-    "True" if (not DEBUG or SERVER_URL_IS_HTTPS) else "False",
-) == "True"
+    default=(not DEBUG or SERVER_URL_IS_HTTPS),
+)
 
 # Credentials (from env). Prefer explicit SOCIAL_ vars, fallback to GOOGLE_* for convenience
 SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = os.getenv("SOCIAL_AUTH_GOOGLE_OAUTH2_KEY") or os.getenv("GOOGLE_CLIENT_ID", "")
@@ -390,7 +402,7 @@ elif DEBUG:
 else:
     WEBAUTHN_ORIGIN = f"https://{WEBAUTHN_RP_ID}"
 
-WEBAUTHN_ALLOW_INSECURE_LOCALHOST = os.getenv(
+WEBAUTHN_ALLOW_INSECURE_LOCALHOST = env_bool(
     "WEBAUTHN_ALLOW_INSECURE_LOCALHOST",
-    "True" if DEBUG else "False",
-) == "True"
+    default=DEBUG,
+)
