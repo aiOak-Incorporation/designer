@@ -8,11 +8,14 @@
       <span class="hero-accent">Meet Our</span>
       <span class="hero-main">Talented Designers</span>
     </h1>
-    <p class="hero-subtitle">
-      Discover the creative minds shaping the future of fashion. Connect with
-      innovative designers who bring unique perspectives and exceptional
-      craftsmanship to the industry.
-    </p>
+      <p class="hero-subtitle">
+        Discover the creative minds shaping the future of fashion. Connect with
+        innovative designers who bring unique perspectives and exceptional
+        craftsmanship to the industry.
+      </p>
+      <p class="hero-note">
+        Note: New designer portfolio websites stay restricted to approved viewers until the designer chooses to share them publicly.
+      </p>
   </div>
 
   <div class="hero-stats">
@@ -105,18 +108,24 @@
             {{ designer.specialization|default:"Fashion Designer" }}
           </div>
 
-          <div class="designer-meta">
-            {% if designer.location %}
-            <span class="meta-item">
-              <i class="fas fa-map-marker-alt"></i> {{ designer.location }}
-            </span>
+            <div class="designer-meta">
+              {% if designer.location %}
+              <span class="meta-item">
+                <i class="fas fa-map-marker-alt"></i> {{ designer.location }}
+              </span>
+              {% endif %}
+              {% if designer.years_of_experience > 0 %}
+              <span class="meta-item">
+                <i class="fas fa-award"></i> {{ designer.years_of_experience }} years
+              </span>
+              {% endif %}
+            </div>
+
+            {% if not designer.portfolio_website %}
+            <div class="portfolio-notice">
+              Portfolio website available on request once the designer makes it public.
+            </div>
             {% endif %}
-            {% if designer.years_of_experience > 0 %}
-            <span class="meta-item">
-              <i class="fas fa-award"></i> {{ designer.years_of_experience }} years
-            </span>
-            {% endif %}
-          </div>
 
           {% if designer.bio %}
           <p class="designer-bio">{{ designer.bio|truncatewords:25 }}</p>
@@ -199,6 +208,7 @@
 .hero-accent { display: block; font-size: 0.6em; color: #ffa500; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px; }
 .hero-main { display: block; background: linear-gradient(45deg, #fff, #ffa500); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 .hero-subtitle { font-size: 1.2rem; color: rgba(255,255,255,0.9); max-width: 600px; margin: 0 auto 40px; line-height: 1.6; }
+  .hero-note { font-size: 1rem; color: rgba(255,255,255,0.85); max-width: 620px; margin: -20px auto 40px; line-height: 1.5; background: rgba(0,0,0,0.15); padding: 12px 18px; border-radius: 12px; backdrop-filter: blur(4px); }
 .hero-stats { display: flex; justify-content: center; gap: 60px; margin-top: 60px; }
 .stat-number { display: block; font-size: 2.5rem; font-weight: 900; color: #ffa500; }
 
@@ -221,6 +231,7 @@
 .designer-specialty { font-size: clamp(1rem, 1.8vw, 1.2rem); color: #444; font-weight: 600; margin-top: 2px; }
 .designer-bio { font-size: clamp(0.98rem, 1.6vw, 1.12rem); line-height: 1.6; color: #333; }
 .designer-meta .meta-item { font-size: clamp(0.95rem, 1.5vw, 1.05rem); color: #555; }
+  .portfolio-notice { margin-top: 16px; padding: 12px 14px; background: #fff7e6; border: 1px solid #ffe0b2; border-radius: 10px; font-size: 0.95rem; color: #9a6b1f; line-height: 1.5; }
 
 /* Make entire card feel clickable when website exists */
 .clickable-card { cursor: pointer; }
