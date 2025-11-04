@@ -162,9 +162,6 @@
   {% endif %}
 </div>
 
-<!-- Include Design Detail Modal -->
-{% include 'designer_portfolio/design_detail_modal.html' %}
-
 <style>
   .designs-page {
     max-width: 1200px;
@@ -502,33 +499,6 @@
         card.style.display = "none";
       }
     });
-  }
-
-  function openDesignModal(designId) {
-    // For now, let's create a sample design object
-    // In a real application, you would fetch this data from your backend
-    const sampleDesignData = {
-      id: designId,
-      title: "Sample Design",
-      description: "This is a sample design description.",
-      category: "casual",
-      cover_image: "/static/images/sample-design.jpg",
-      fabric_type: "Cotton",
-      target_price: "29.99",
-      color_palette: "Blue, White",
-      season: "summer",
-      size_range: "XS-XL",
-      tech_pack_pdf: "/media/designs/sample-techpack.pdf",
-      tech_pack_excel: "/media/designs/sample-techpack.xlsx",
-      design_notes: "Special care instructions included.",
-      is_public: true,
-      is_featured: false,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-
-    // Open the modal with the sample data
-    openDesignModal(sampleDesignData);
   }
 
   function deleteDesign(designId) {

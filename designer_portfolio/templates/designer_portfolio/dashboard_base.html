@@ -201,18 +201,7 @@
   </main>
 </div>
 
-<!-- Design Detail Modal -->
-<div id="designModal" class="modal">
-  <div class="modal-content">
-    <div class="modal-header">
-      <h2 id="modalTitle">Design Details</h2>
-      <span class="modal-close" onclick="closeDesignModal()">&times;</span>
-    </div>
-    <div class="modal-body" id="modalBody">
-      <!-- Dynamic content loaded here -->
-    </div>
-  </div>
-</div>
+{% include 'designer_portfolio/design_detail_modal.html' %}
 
 <style>
   .dashboard-container {
@@ -653,42 +642,5 @@
     }
   }
 </style>
-
-<script>
-  function openDesignModal(designId) {
-    const modal = document.getElementById("designModal");
-    const modalBody = document.getElementById("modalBody");
-    const modalTitle = document.getElementById("modalTitle");
-
-    // Show loading
-    modalBody.innerHTML =
-      '<div style="text-align: center; padding: 40px;"><div class="loading-spinner"></div><p>Loading design details...</p></div>';
-    modal.style.display = "block";
-
-    // Fetch design details via AJAX
-    fetch(`/dashboard/designs/${designId}/details/`)
-      .then((response) => response.json())
-      .then((data) => {
-        modalTitle.textContent = data.title;
-        modalBody.innerHTML = data.html;
-      })
-      .catch((error) => {
-        modalBody.innerHTML =
-          '<div style="text-align: center; padding: 40px; color: #dc3545;"><p>Error loading design details.</p></div>';
-      });
-  }
-
-  function closeDesignModal() {
-    document.getElementById("designModal").style.display = "none";
-  }
-
-  // Close modal when clicking outside
-  window.onclick = function (event) {
-    const modal = document.getElementById("designModal");
-    if (event.target === modal) {
-      closeDesignModal();
-    }
-  };
-</script>
 
 {% endblock %}

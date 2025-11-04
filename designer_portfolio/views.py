@@ -3,7 +3,7 @@ import json
 
 from datetime import timedelta
 
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.views.generic import TemplateView, DetailView, ListView
@@ -23,12 +23,16 @@ from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.db import transaction
 from django.db.models import Q
+from django.urls import reverse
+from decimal import Decimal, InvalidOperation
+import os
 from .forms import DesignerSignUpForm, DesignerLoginForm
 from .models import (
     DesignerProfile,
     SubscriptionPlan,
     UserSubscription,
     Design,
+    DesignImage,
     Collection,
     Event,
     WebAuthnCredential,
@@ -686,8 +690,43 @@ def designer_design_edit_view(request, design_id):
 def designer_design_delete_view(request, design_id):
     return render(request, "designer_portfolio/designer_design_delete.html", {})
 
+@login_required
 def designer_design_detail_api(request, design_id):
-    return JsonResponse({"status": "ok"})
+    design = get_object_or_404(Design, id=design_id, designer=request.user)
+
+    gallery = [
+        {
+            "id": image.id,
+            "url": image.image.url,
+            "caption": image.caption or "",
+        }
+        for image in design.images.order_by("order", "created_at")
+    ]
+
+    data = {
+        "id": design.id,
+        "title": design.title,
+        "description": design.description or "",
+        "season": design.season or "",
+        "year": design.year,
+        "is_public": design.published,
+        "is_featured": False,
+        "cover_image_url": design.cover_image.url if design.cover_image else "",
+        "fabric_type": design.fabric_details or "",
+        "target_price": str(design.target_price) if design.target_price is not None else "",
+        "color_palette": design.color_palette or "",
+        "size_range": design.size_range or "",
+        "techpack_pdf_url": design.techpack_pdf.url if design.techpack_pdf else "",
+        "techpack_excel_url": design.techpack_excel.url if design.techpack_excel else "",
+        "design_notes": design.production_notes or "",
+        "created_at": design.created_at.isoformat(),
+        "updated_at": design.updated_at.isoformat(),
+        "edit_url": reverse("designer_design_edit", args=[design.id]),
+        "gallery": gallery,
+        "category": "",
+    }
+
+    return JsonResponse(data)
 
 def subscription_dashboard(request):
     return render(request, "designer_portfolio/subscription_dashboard.html", {})
@@ -767,6 +806,144 @@ def designer_design_create_view(request):
             trial_end_date=trial_end,
             next_billing_date=trial_end,
         )
+
+    if request.method == "POST":
+        form_values = request.POST
+        files = request.FILES
+        errors = []
+
+        title = (form_values.get("title") or "").strip()
+        season = (form_values.get("season") or "").strip()
+        slug_value = (form_values.get("slug") or "").strip()
+        year_raw = (form_values.get("year") or "").strip()
+
+        if not title:
+            errors.append("Design title is required.")
+
+        if not season:
+            errors.append("Season is required.")
+
+        try:
+            year = int(year_raw) if year_raw else timezone.now().year
+        except ValueError:
+            errors.append("Year must be a valid number.")
+            year = timezone.now().year
+
+        target_price = None
+        target_price_raw = (form_values.get("target_price") or "").strip()
+        if target_price_raw:
+            try:
+                target_price = Decimal(target_price_raw)
+            except InvalidOperation:
+                errors.append("Target price must be a valid number.")
+
+        techpack_file = files.get("techpack_file")
+        techpack_pdf = None
+        techpack_excel = None
+        if techpack_file:
+            ext = os.path.splitext(techpack_file.name)[1].lower()
+            if ext == ".pdf":
+                techpack_pdf = techpack_file
+            elif ext in {".xls", ".xlsx"}:
+                techpack_excel = techpack_file
+            else:
+                errors.append("Tech pack must be a PDF or Excel file.")
+
+        if errors:
+            for error in errors:
+                messages.error(request, error)
+            if request.headers.get("x-requested-with", "").lower() == "xmlhttprequest":
+                return JsonResponse({"status": "error", "errors": errors}, status=400)
+            context = {
+                "current_section": "designs",
+                "current_year": timezone.now().year,
+                "form_values": form_values.dict(),
+            }
+            return render(
+                request,
+                "designer_portfolio/designer_design_create.html",
+                context,
+            )
+
+        published_flag = str(form_values.get("published", "")).lower()
+        published = published_flag in {"true", "1", "on"}
+        is_draft = not published
+
+        fabric_type = (form_values.get("fabric_type") or "").strip()
+        color_palette = (form_values.get("color_palette") or "").strip()
+        size_range = (form_values.get("size_range") or "").strip()
+        description = (form_values.get("description") or "").strip()
+        technical_notes = (form_values.get("technical_notes") or "").strip()
+        fabric_weight = (form_values.get("fabric_weight") or "").strip()
+        target_market = (form_values.get("target_market") or "").strip()
+        category = (form_values.get("category") or "").strip()
+
+        production_notes_parts = []
+        if technical_notes:
+            production_notes_parts.append(technical_notes)
+        if fabric_weight:
+            production_notes_parts.append(f"Fabric weight: {fabric_weight}")
+        if target_market:
+            production_notes_parts.append(f"Target market: {target_market}")
+        if category:
+            production_notes_parts.append(f"Category: {category}")
+
+        production_notes = "\n\n".join(production_notes_parts).strip()
+
+        cover_image = files.get("cover_image")
+
+        with transaction.atomic():
+            design = Design(
+                title=title,
+                season=season,
+                year=year,
+                designer=request.user,
+                description=description,
+                published=published,
+                fabric_details=fabric_type,
+                color_palette=color_palette,
+                size_range=size_range,
+                target_price=target_price,
+                production_notes=production_notes,
+            )
+
+            if slug_value:
+                design.slug = slug_value
+
+            if cover_image:
+                design.cover_image = cover_image
+
+            if techpack_pdf:
+                design.techpack_pdf = techpack_pdf
+
+            if techpack_excel:
+                design.techpack_excel = techpack_excel
+
+            design.save()
+
+            additional_images = files.getlist("additional_images")
+            for order, image_file in enumerate(additional_images):
+                DesignImage.objects.create(
+                    design=design,
+                    image=image_file,
+                    order=order,
+                )
+
+        success_message = "Draft saved successfully." if is_draft else "Design uploaded successfully."
+        messages.success(request, success_message)
+
+        if request.headers.get("x-requested-with", "").lower() == "xmlhttprequest":
+            return JsonResponse(
+                {
+                    "status": "ok",
+                    "redirect_url": reverse("designer_designs"),
+                    "design_id": design.id,
+                    "message": success_message,
+                    "draft": is_draft,
+                }
+            )
+
+        return redirect("designer_designs")
 
     return render(
         request,

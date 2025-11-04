@@ -29,14 +29,20 @@
         <!-- Left Column: Image and Basic Info -->
         <div>
           <!-- Cover Image -->
-          <div id="modalImageContainer" class="mb-4">
-            <img
-              id="modalImage"
-              src=""
-              alt=""
-              class="w-full h-64 object-cover rounded-lg shadow-md"
-            />
-          </div>
+            <div id="modalImageContainer" class="mb-4">
+              <img
+                id="modalImage"
+                src=""
+                alt=""
+                class="w-full h-64 object-cover rounded-lg shadow-md"
+              />
+              <div
+                id="modalImagePlaceholder"
+                class="w-full h-64 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400 text-sm tracking-wide hidden"
+              >
+                No cover image uploaded
+              </div>
+            </div>
 
           <!-- Basic Information -->
           <div class="bg-gray-50 p-4 rounded-lg">
@@ -222,17 +228,60 @@
 </div>
 
 <script>
-  function openDesignModal(designData) {
+  async function openDesignModal(designId) {
     const modal = document.getElementById("designDetailModal");
+    const modalTitle = document.getElementById("modalTitle");
 
-    // Populate modal with design data
-    document.getElementById("modalTitle").textContent = designData.title;
-    document.getElementById("modalImage").src =
-      designData.cover_image || "/static/images/placeholder-design.jpg";
-    document.getElementById("modalImage").alt = designData.title;
-    document.getElementById("modalCategory").textContent = formatCategory(
-      designData.category
-    );
+    modalTitle.textContent = "Loading...";
+    document.getElementById("modalDescription").textContent = "Fetching design details...";
+
+    modal.classList.remove("hidden");
+    document.body.style.overflow = "hidden";
+
+    try {
+      const response = await fetch(`/dashboard/designs/${designId}/details/`, {
+        headers: {
+          "X-Requested-With": "XMLHttpRequest",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to load design details");
+      }
+
+      const designData = await response.json();
+      populateDesignModal(designData);
+    } catch (error) {
+      showDesignModalError("Unable to load design details. Please try again later.");
+      console.error(error);
+    }
+  }
+
+  function populateDesignModal(designData) {
+    const modalTitle = document.getElementById("modalTitle");
+    const imageEl = document.getElementById("modalImage");
+    const imagePlaceholder = document.getElementById("modalImagePlaceholder");
+
+    modalTitle.textContent = designData.title || "Design Details";
+
+    if (designData.cover_image_url) {
+      imageEl.src = designData.cover_image_url;
+      imageEl.alt = designData.title || "Design cover";
+      imageEl.classList.remove("hidden");
+      if (imagePlaceholder) {
+        imagePlaceholder.classList.add("hidden");
+      }
+    } else {
+      imageEl.src = "";
+      imageEl.alt = "";
+      imageEl.classList.add("hidden");
+      if (imagePlaceholder) {
+        imagePlaceholder.classList.remove("hidden");
+      }
+    }
+
+    document.getElementById("modalCategory").textContent =
+      formatCategory(designData.category) || "Not specified";
     document.getElementById("modalCreated").textContent = formatDate(
       designData.created_at
     );
@@ -245,11 +294,11 @@
     document.getElementById("modalDescription").textContent =
       designData.description || "No description available";
 
-    // Design specifications
     document.getElementById("modalFabricType").textContent =
       designData.fabric_type || "Not specified";
-    document.getElementById("modalTargetPrice").textContent =
-      designData.target_price ? "$" + designData.target_price : "Not specified";
+    document.getElementById("modalTargetPrice").textContent = designData.target_price
+      ? `$${designData.target_price}`
+      : "Not specified";
     document.getElementById("modalColorPalette").textContent =
       designData.color_palette || "Not specified";
     document.getElementById("modalSeason").textContent = formatSeason(
@@ -258,24 +307,22 @@
     document.getElementById("modalSizeRange").textContent =
       designData.size_range || "Not specified";
 
-    // Tech pack files
     const pdfContainer = document.getElementById("modalPdfContainer");
     const excelContainer = document.getElementById("modalExcelContainer");
     const noFilesMsg = document.getElementById("modalNoFiles");
 
     let hasFiles = false;
 
-    if (designData.tech_pack_pdf) {
-      document.getElementById("modalPdfLink").href = designData.tech_pack_pdf;
+    if (designData.techpack_pdf_url) {
+      document.getElementById("modalPdfLink").href = designData.techpack_pdf_url;
       pdfContainer.classList.remove("hidden");
       hasFiles = true;
     } else {
       pdfContainer.classList.add("hidden");
     }
 
-    if (designData.tech_pack_excel) {
-      document.getElementById("modalExcelLink").href =
-        designData.tech_pack_excel;
+    if (designData.techpack_excel_url) {
+      document.getElementById("modalExcelLink").href = designData.techpack_excel_url;
       excelContainer.classList.remove("hidden");
       hasFiles = true;
     } else {
@@ -284,17 +331,14 @@
 
     noFilesMsg.classList.toggle("hidden", hasFiles);
 
-    // Design notes
     const notesContainer = document.getElementById("modalNotesContainer");
     if (designData.design_notes && designData.design_notes.trim()) {
-      document.getElementById("modalNotes").textContent =
-        designData.design_notes;
+      document.getElementById("modalNotes").textContent = designData.design_notes;
       notesContainer.classList.remove("hidden");
     } else {
       notesContainer.classList.add("hidden");
     }
 
-    // Visibility settings
     const publicIcon = document.getElementById("modalPublicIcon");
     const publicText = document.getElementById("modalPublicText");
     const featuredIcon = document.getElementById("modalFeaturedIcon");
@@ -316,14 +360,22 @@
       featuredText.textContent = "Not Featured";
     }
 
-    // Set edit link
-    document.getElementById(
-      "modalEditLink"
-    ).href = `/dashboard/designs/${designData.id}/edit/`;
+    const editLink = document.getElementById("modalEditLink");
+    if (designData.edit_url) {
+      editLink.href = designData.edit_url;
+      editLink.classList.remove("pointer-events-none", "opacity-50");
+    } else {
+      editLink.href = "#";
+      editLink.classList.add("pointer-events-none", "opacity-50");
+    }
+  }
 
-    // Show modal
-    modal.classList.remove("hidden");
-    document.body.style.overflow = "hidden";
+  function showDesignModalError(message) {
+    document.getElementById("modalTitle").textContent = "Design Details";
+    document.getElementById("modalDescription").textContent = message;
+    document.getElementById("modalPdfContainer").classList.add("hidden");
+    document.getElementById("modalExcelContainer").classList.add("hidden");
+    document.getElementById("modalNoFiles").classList.remove("hidden");
   }
 
   function closeDesignModal() {
@@ -342,18 +394,32 @@
       footwear: "Footwear",
       other: "Other",
     };
-    return categoryMap[category] || category;
+    if (!category) {
+      return "";
+    }
+    const normalized = String(category).toLowerCase();
+    return categoryMap[normalized] || category;
   }
 
   function formatSeason(season) {
+    if (!season) {
+      return "Not specified";
+    }
+    const normalized = String(season).toLowerCase();
     const seasonMap = {
       spring: "Spring",
       summer: "Summer",
       fall: "Fall",
+      autumn: "Fall",
       winter: "Winter",
+      resort: "Resort",
+      pre-fall: "Pre-Fall",
+      "pre-fall": "Pre-Fall",
+      "pre fall": "Pre-Fall",
       all_season: "All Season",
+      "all-season": "All Season",
     };
-    return seasonMap[season] || "Not specified";
+    return seasonMap[normalized] || season;
   }
 
   function formatDate(dateString) {
