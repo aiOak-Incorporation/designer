@@ -48,13 +48,31 @@
   <!-- Designs Grid -->
   <div class="designs-grid" id="designsGrid">
     {% for design in designs %}
-    <div
-      class="design-card"
-      data-title="{{ design.title|lower }}"
-      data-season="{{ design.season }}"
-      data-year="{{ design.year }}"
-      data-status="{% if design.published %}published{% else %}draft{% endif %}"
-    >
+      <div
+        class="design-card"
+        data-title="{{ design.title|lower }}"
+        data-season="{{ design.season }}"
+        data-year="{{ design.year }}"
+        data-status="{% if design.published %}published{% else %}draft{% endif %}"
+        data-id="{{ design.id }}"
+        data-design-title="{{ design.title|escapejs }}"
+        data-description="{{ design.description|default_if_none:''|escapejs }}"
+        data-published="{{ design.published|yesno:'true,false' }}"
+        data-season-display="{{ design.season|default_if_none:''|escapejs }}"
+        data-year-display="{{ design.year }}"
+        data-fabric-details="{{ design.fabric_details|default_if_none:''|escapejs }}"
+        data-color-palette="{{ design.color_palette|default_if_none:''|escapejs }}"
+        data-size-range="{{ design.size_range|default_if_none:''|escapejs }}"
+        data-target-price="{{ design.target_price|default_if_none:'' }}"
+        data-production-notes="{{ design.production_notes|default_if_none:''|escapejs }}"
+        data-techpack-pdf="{% if design.techpack_pdf %}{{ design.techpack_pdf.url }}{% endif %}"
+        data-techpack-excel="{% if design.techpack_excel %}{{ design.techpack_excel.url }}{% endif %}"
+        data-has-techpack="{{ design.has_techpack|yesno:'true,false' }}"
+        data-cover="{% if design.cover_image %}{{ design.cover_image.url }}{% endif %}"
+        data-created="{{ design.created_at|date:'c' }}"
+        data-updated="{{ design.updated_at|date:'c' }}"
+        data-slug="{{ design.slug }}"
+      >
       <!-- Design Image -->
       <div class="design-image-container">
         {% if design.cover_image %}
@@ -78,8 +96,8 @@
 
         <!-- Action Buttons -->
         <div class="design-actions">
-          <button
-            onclick="openDesignModal('{{ design.id }}')"
+            <button
+              onclick="handleDesignModal(this)"
             class="action-btn view-btn"
             title="View Details"
           >
@@ -92,8 +110,8 @@
           >
             ✏️
           </a>
-          <button
-            onclick="deleteDesign('{{ design.id }}')"
+            <button
+              onclick="handleDeleteDesign(this)"
             class="action-btn delete-btn"
             title="Delete"
           >
@@ -107,21 +125,33 @@
         <h4>{{ design.title }}</h4>
         <p class="design-meta">{{ design.season }} {{ design.year }}</p>
 
-        <div class="design-details">
-          {% if design.has_techpack %}
-          <span class="detail-badge techpack">📋 Tech Pack</span>
-          {% endif %} {% if design.target_price %}
-          <span class="detail-badge price">${{ design.target_price }}</span>
+          {% if design.description %}
+          <p class="design-summary">{{ design.description|truncatechars:110 }}</p>
           {% endif %}
-        </div>
 
-        <div class="design-tags">
-          {% if design.fabric_type %}
-          <span class="tag">{{ design.fabric_type }}</span>
-          {% endif %} {% if design.target_market %}
-          <span class="tag">{{ design.target_market }}</span>
-          {% endif %}
-        </div>
+          <div class="design-details">
+            {% if design.has_techpack %}
+            <span class="detail-badge techpack" title="Tech pack uploaded">📋 Tech Pack</span>
+            {% endif %}
+            {% if design.target_price %}
+            <span class="detail-badge price" title="Target price">${{ design.target_price }}</span>
+            {% endif %}
+            {% if design.size_range %}
+            <span class="detail-badge size" title="Size range">{{ design.size_range }}</span>
+            {% endif %}
+            {% if design.color_palette %}
+            <span class="detail-badge palette" title="Color palette">{{ design.color_palette|truncatechars:24 }}</span>
+            {% endif %}
+          </div>
+
+          <div class="design-tags">
+            {% if design.fabric_details %}
+            <span class="tag" title="Fabric details">{{ design.fabric_details|truncatechars:32 }}</span>
+            {% endif %}
+            {% if design.production_notes %}
+            <span class="tag" title="Production notes">Notes</span>
+            {% endif %}
+          </div>
       </div>
     </div>
     {% empty %}
@@ -356,6 +386,13 @@
     font-size: 14px;
   }
 
+  .design-summary {
+    margin: 0 0 12px 0;
+    color: #555;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
   .design-details {
     display: flex;
     gap: 8px;
@@ -378,6 +415,16 @@
   .detail-badge.price {
     background: rgba(40, 167, 69, 0.1);
     color: #28a745;
+  }
+
+  .detail-badge.size {
+    background: rgba(23, 162, 184, 0.12);
+    color: #17a2b8;
+  }
+
+  .detail-badge.palette {
+    background: rgba(111, 66, 193, 0.12);
+    color: #6f42c1;
   }
 
   .design-tags {
@@ -504,56 +551,76 @@
     });
   }
 
-  function openDesignModal(designId) {
-    // For now, let's create a sample design object
-    // In a real application, you would fetch this data from your backend
-    const sampleDesignData = {
-      id: designId,
-      title: "Sample Design",
-      description: "This is a sample design description.",
-      category: "casual",
-      cover_image: "/static/images/sample-design.jpg",
-      fabric_type: "Cotton",
-      target_price: "29.99",
-      color_palette: "Blue, White",
-      season: "summer",
-      size_range: "XS-XL",
-      tech_pack_pdf: "/media/designs/sample-techpack.pdf",
-      tech_pack_excel: "/media/designs/sample-techpack.xlsx",
-      design_notes: "Special care instructions included.",
-      is_public: true,
-      is_featured: false,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-
-    // Open the modal with the sample data
-    openDesignModal(sampleDesignData);
+function handleDesignModal(trigger) {
+  const card = trigger?.closest(".design-card");
+  if (!card) {
+    return;
   }
 
-  function deleteDesign(designId) {
-    if (
-      confirm(
-        "Are you sure you want to delete this design? This action cannot be undone."
-      )
-    ) {
-      // Create a form and submit it
-      const form = document.createElement("form");
-      form.method = "POST";
-      form.action = `/dashboard/designs/${designId}/delete/`;
+  const data = card.dataset;
+  const designData = {
+    id: data.id || "",
+    title: data.designTitle || card.querySelector("h4")?.textContent?.trim() || "",
+    description: data.description || card.querySelector(".design-summary")?.textContent?.trim() || "",
+    season: data.seasonDisplay || data.season || "",
+    year: data.yearDisplay || data.year || "",
+    published: data.published === "true",
+    fabric_details: data.fabricDetails || "",
+    color_palette: data.colorPalette || "",
+    size_range: data.sizeRange || "",
+    target_price: data.targetPrice || "",
+    production_notes: data.productionNotes || "",
+    techpack_pdf: data.techpackPdf || "",
+    techpack_excel: data.techpackExcel || "",
+    has_techpack: data.hasTechpack === "true",
+    cover_image: data.cover || "",
+    created_at: data.created || "",
+    updated_at: data.updated || "",
+    slug: data.slug || "",
+  };
 
-      const csrfToken = document.querySelector(
-        "[name=csrfmiddlewaretoken]"
-      ).value;
-      const csrfInput = document.createElement("input");
-      csrfInput.type = "hidden";
-      csrfInput.name = "csrfmiddlewaretoken";
-      csrfInput.value = csrfToken;
+  if (typeof window.openDesignModal === "function") {
+    window.openDesignModal(designData);
+  }
+}
 
-      form.appendChild(csrfInput);
-      document.body.appendChild(form);
-      form.submit();
+function handleDeleteDesign(trigger) {
+  const card = trigger?.closest(".design-card");
+  if (!card) {
+    return;
+  }
+
+  const designId = card.dataset.id;
+  if (!designId) {
+    return;
+  }
+
+  if (
+    confirm(
+      "Are you sure you want to delete this design? This action cannot be undone."
+    )
+  ) {
+    // Create a form and submit it
+    const form = document.createElement("form");
+    form.method = "POST";
+    form.action = `/dashboard/designs/${designId}/delete/`;
+
+    const csrfEl = document.querySelector("[name=csrfmiddlewaretoken]");
+    const csrfToken = csrfEl ? csrfEl.value : null;
+    if (!csrfToken) {
+      alert("Unable to locate CSRF token for deletion request.");
+      return;
     }
+
+    const csrfInput = document.createElement("input");
+    csrfInput.type = "hidden";
+    csrfInput.name = "csrfmiddlewaretoken";
+    csrfInput.value = csrfToken;
+
+    form.appendChild(csrfInput);
+    document.body.appendChild(form);
+    form.submit();
   }
+}
 </script>
 {% endblock %}
