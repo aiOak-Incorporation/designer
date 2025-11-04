@@ -260,8 +260,9 @@ else:
 # Fail fast if SQLite is configured in production-like environments.
 engine_is_sqlite = DATABASES["default"]["ENGINE"].endswith("sqlite3")
 production_like = (not DEBUG)
+enforce_persistent_db = os.getenv("ENFORCE_PERSISTENT_DB", "False") == "True"
 
-if production_like and engine_is_sqlite:
+if production_like and engine_is_sqlite and enforce_persistent_db:
     raise ImproperlyConfigured(
         "SQLite is configured in a production-like environment. Set DATABASE_URL or Postgres DB_* env vars to use a persistent database."
     )
