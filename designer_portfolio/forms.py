@@ -12,7 +12,7 @@ class DesignerSignUpForm(UserCreationForm):
     website_url = forms.URLField(
         required=False,
         label="Portfolio website",
-        help_text="Add your website or portfolio link (optional)",
+        help_text="Share a website or portfolio link for our private review (optional)",
     )
 
     # Subscription plan selection (by plan "name" string to match template radios)
@@ -72,7 +72,7 @@ class DesignerSignUpForm(UserCreationForm):
         })
         self.fields["website_url"].widget.attrs.update({
             "class": "form-control",
-            "placeholder": "https://your-portfolio.example (optional)",
+            "placeholder": "https://your-portfolio.example (private, optional)",
             "autocomplete": "url",
         })
         self.fields["password1"].widget.attrs.update({

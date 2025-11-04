@@ -37,8 +37,9 @@
       </div>
 
       <div class="form-group">
-        <label for="id_website_url">Portfolio Website <span class="optional">(optional)</span></label>
+        <label for="id_website_url">Portfolio Website <span class="optional">(optional – shared privately)</span></label>
         {{ form.website_url }}
+        <p class="field-note">Sharing a portfolio link helps our team review your work. We keep new designer websites restricted until you choose to make them public.</p>
         {% if form.website_url.errors %}
         <div class="error">{{ form.website_url.errors }}</div>
         {% endif %}
@@ -664,6 +665,13 @@
     .signup-container {
       margin: 20px;
       padding: 25px;
+    }
+
+    .field-note {
+      margin-top: 6px;
+      font-size: 13px;
+      color: #666;
+      line-height: 1.5;
     }
 
     .subscription-plans {
