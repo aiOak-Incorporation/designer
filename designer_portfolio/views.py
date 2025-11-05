@@ -7,7 +7,7 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.views.generic import TemplateView, DetailView, ListView
-from django.contrib.auth.views import LoginView
+from django.contrib.auth.views import LoginView, PasswordResetView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth import login, authenticate, get_user_model
 from django.http import JsonResponse
@@ -23,7 +23,9 @@ from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.db import transaction
 from django.db.models import Q
-from .forms import DesignerSignUpForm, DesignerLoginForm
+from django.urls import reverse_lazy
+from .forms import DesignerSignUpForm, DesignerLoginForm, DesignerPasswordResetForm
+from .auth_utils import ensure_designer_access
 from .models import (
     DesignerProfile,
     SubscriptionPlan,
@@ -117,7 +119,8 @@ def signup_view(request):
                 inactive_user.save()
 
                 # Ensure related records exist
-                profile, _ = DesignerProfile.objects.get_or_create(user=inactive_user)
+                ensure_designer_access(inactive_user)
+                profile = inactive_user.designer_profile
                 # Persist optional website URL if valid
                 if website_url:
                     try:
@@ -127,16 +130,6 @@ def signup_view(request):
                     except ValidationError:
                         # Ignore invalid URL in restore path; do not block restore
                         pass
-                if not hasattr(inactive_user, "subscription"):
-                    trial_end = timezone.now() + timedelta(days=30)
-                    UserSubscription.objects.create(
-                        user=inactive_user,
-                        plan=None,
-                        status="free_trial",
-                        payment_method=None,
-                        trial_end_date=trial_end,
-                        next_billing_date=trial_end,
-                    )
 
                 # Log the user in using identifier they provided (email or username)
                 user_identifier = email_input or desired_username
@@ -322,7 +315,8 @@ class DesignerRegistrationView(APIView):
                 inactive_user.save()
 
                 # Ensure related records
-                profile, _ = DesignerProfile.objects.get_or_create(user=inactive_user)
+                ensure_designer_access(inactive_user)
+                profile = inactive_user.designer_profile
                 if website_url:
                     try:
                         URLValidator()(website_url)
@@ -330,21 +324,6 @@ class DesignerRegistrationView(APIView):
                         profile.save()
                     except ValidationError:
                         pass
-                if not hasattr(inactive_user, "subscription"):
-                    trial_end = timezone.now() + timedelta(days=30)
-                    plan_instance = None
-                    if subscription_plan:
-                        plan_instance = SubscriptionPlan.objects.filter(
-                            name=subscription_plan, is_active=True
-                        ).first()
-                    UserSubscription.objects.create(
-                        user=inactive_user,
-                        plan=plan_instance,
-                        status="free_trial",
-                        payment_method=payment_method if payment_method else None,
-                        trial_end_date=trial_end,
-                        next_billing_date=trial_end,
-                    )
 
                 return Response(
                     {"message": "Account restored. You can now sign in."},
@@ -378,8 +357,8 @@ class DesignerRegistrationView(APIView):
             user.is_active = True
             user.save()
 
-            # Ensure a profile exists for template access patterns
-            profile, _ = DesignerProfile.objects.get_or_create(user=user)
+            ensure_designer_access(user)
+            profile = user.designer_profile
             if website_url:
                 try:
                     URLValidator()(website_url)
@@ -388,22 +367,40 @@ class DesignerRegistrationView(APIView):
                 except ValidationError:
                     pass
 
-            # Create a default trial subscription
-            trial_days = 30
-            trial_end = timezone.now() + timedelta(days=trial_days)
-
             plan_instance = None
             if subscription_plan:
                 plan_instance = SubscriptionPlan.objects.filter(name=subscription_plan, is_active=True).first()
 
-            UserSubscription.objects.create(
-                user=user,
-                plan=plan_instance,
-                status="free_trial",
-                payment_method=payment_method if payment_method else None,
-                trial_end_date=trial_end,
-                next_billing_date=trial_end,
-            )
+            trial_days = 30
+            trial_end = timezone.now() + timedelta(days=trial_days)
+
+            subscription = user.subscription
+            update_fields = set()
+
+            if plan_instance and subscription.plan != plan_instance:
+                subscription.plan = plan_instance
+                update_fields.add("plan")
+
+            desired_payment_method = payment_method if payment_method else None
+            if subscription.payment_method != desired_payment_method:
+                subscription.payment_method = desired_payment_method
+                update_fields.add("payment_method")
+
+            for field_name in ["trial_end_date", "next_billing_date"]:
+                if getattr(subscription, field_name) != trial_end:
+                    setattr(subscription, field_name, trial_end)
+                    update_fields.add(field_name)
+
+            if subscription.trial_start_date is None:
+                subscription.trial_start_date = timezone.now()
+                update_fields.add("trial_start_date")
+
+            if subscription.status != "free_trial":
+                subscription.status = "free_trial"
+                update_fields.add("status")
+
+            if update_fields:
+                subscription.save(update_fields=list(update_fields))
 
             def send_registration_emails():
                 # Welcome email to designer
@@ -928,6 +925,14 @@ class DesignerLoginView(LoginView):
             self.request.session.set_expiry(0)
 
         return response
+
+
+class DesignerPasswordResetView(PasswordResetView):
+    form_class = DesignerPasswordResetForm
+    template_name = "registration/password_reset_form.html"
+    email_template_name = "registration/password_reset_email.html"
+    subject_template_name = "registration/password_reset_subject.txt"
+    success_url = reverse_lazy("password_reset_done")
 
 
 # --- Security/Errors ---

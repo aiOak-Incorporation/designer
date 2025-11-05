@@ -1,9 +1,12 @@
 # designer_portfolio/signals.py
 from django.db.models.signals import post_save
 from django.contrib.auth.models import User
+from django.contrib.auth.signals import user_logged_in
 from django.dispatch import receiver
 from django.core.mail import send_mail
 from django.conf import settings
+
+from .auth_utils import ensure_designer_access
 
 
 @receiver(post_save, sender=User)
@@ -25,3 +28,9 @@ def notify_designer_on_approval(sender, instance, created, **kwargs):
             recipient_list=[instance.email],
             fail_silently=True,
         )
+
+
+@receiver(user_logged_in)
+def bootstrap_designer_after_login(sender, user, request, **kwargs):
+    """Ensure legacy accounts gain the required related records on login."""
+    ensure_designer_access(user)
