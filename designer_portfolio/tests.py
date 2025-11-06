@@ -113,6 +113,8 @@ class PasswordResetFlowTests(TestCase):
 
     @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
     def test_password_reset_by_username_reactivates_and_bootstraps(self):
+        mail.outbox.clear()
+
         response = self.client.post(
             reverse("password_reset"),
             {"email": self.user.username},
@@ -136,4 +138,28 @@ class PasswordResetFlowTests(TestCase):
         self.assertTrue(
             any("sleepy@example.com" in (message.to or []) for message in mail.outbox),
             "Expected emails to include the designer's address",
+        )
+
+    @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
+    def test_password_reset_falls_back_to_contact_email(self):
+        mail.outbox.clear()
+        fallback_email = "sleepy-contact@example.com"
+
+        # Ensure the user record has no email but the profile exposes a contact address
+        self.user.email = ""
+        self.user.save(update_fields=["email"])
+        DesignerProfile.objects.create(user=self.user, contact_email=fallback_email)
+
+        response = self.client.post(
+            reverse("password_reset"),
+            {"email": self.user.username},
+            follow=False,
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse("password_reset_done"))
+
+        self.assertTrue(
+            any(fallback_email in (message.to or []) for message in mail.outbox),
+            "Expected the reset email to use the profile contact address when user.email is empty",
         )
