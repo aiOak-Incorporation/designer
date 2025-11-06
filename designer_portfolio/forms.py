@@ -2,6 +2,10 @@ from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm, PasswordResetForm
+from django.contrib.auth.tokens import default_token_generator
+from django.contrib.sites.shortcuts import get_current_site
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
 from django.utils import timezone
 from django.db.models import Q
 from datetime import timedelta
@@ -231,8 +235,6 @@ class DesignerPasswordResetForm(PasswordResetForm):
         for user in candidates:
             if user.pk in seen_user_ids:
                 continue
-            if not user.email:
-                continue  # Cannot send reset email without an address
 
             seen_user_ids.add(user.pk)
 
@@ -244,3 +246,64 @@ class DesignerPasswordResetForm(PasswordResetForm):
             users.append(user)
 
         return users
+
+    def save(
+        self,
+        domain_override=None,
+        subject_template_name="registration/password_reset_subject.txt",
+        email_template_name="registration/password_reset_email.html",
+        use_https=False,
+        token_generator=default_token_generator,
+        from_email=None,
+        request=None,
+        html_email_template_name=None,
+        extra_email_context=None,
+    ):
+        """Send reset links to the designer's reachable email address.
+
+        Falls back to the profile contact email when the core ``User`` record
+        does not have an address (common for imported legacy accounts).
+        """
+
+        identifier = self.cleaned_data["email"]
+        if not domain_override:
+            current_site = get_current_site(request)
+            site_name = current_site.name
+            domain = current_site.domain
+        else:
+            site_name = domain = domain_override
+
+        UserModel = get_user_model()
+        email_field_name = UserModel.get_email_field_name()
+
+        for user in self.get_users(identifier):
+            user_email = (getattr(user, email_field_name) or "").strip()
+
+            if not user_email:
+                profile = getattr(user, "designer_profile", None)
+                if profile:
+                    user_email = (getattr(profile, "contact_email", "") or "").strip()
+
+            if not user_email:
+                continue  # Still no valid destination
+
+            user_pk_bytes = force_bytes(UserModel._meta.pk.value_to_string(user))
+            context = {
+                "email": user_email,
+                "domain": domain,
+                "site_name": site_name,
+                "uid": urlsafe_base64_encode(user_pk_bytes),
+                "user": user,
+                "token": token_generator.make_token(user),
+                "protocol": "https" if use_https else "http",
+                **(extra_email_context or {}),
+            }
+
+            self.send_mail(
+                subject_template_name,
+                email_template_name,
+                context,
+                from_email,
+                user_email,
+                html_email_template_name=html_email_template_name,
+            )
