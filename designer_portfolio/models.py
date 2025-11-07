@@ -19,7 +19,7 @@ class Brand(TimeStampedModel):
     logo = models.ImageField(upload_to="brand/", blank=True, null=True)
     primary_color = models.CharField(max_length=7, default="#000000")  # black
     secondary_color = models.CharField(max_length=7, default="#FFFFFF")  # white
-    accent_color = models.CharField(max_length=7, default="#9CA3AF")    # neutral gray
+    accent_color = models.CharField(max_length=7, default="#9CA3AF")  # neutral gray
     primary_font = models.CharField(max_length=100, default="Playfair Display")
     secondary_font = models.CharField(max_length=100, default="Inter")
 
@@ -27,21 +27,17 @@ class Brand(TimeStampedModel):
         return self.name
 
 
-from django.db import models
-from django.utils.text import slugify
+# ---------------- Collection ----------------
 class Collection(models.Model):
     name = models.CharField(max_length=255)
     slug = models.SlugField(unique=True, blank=True)
     year = models.PositiveIntegerField(default=2024)
     season = models.CharField(max_length=100, blank=True, null=True)
-    cover_image = models.ImageField(upload_to="collections/covers/", blank=True, null=True)
+    cover_image = models.ImageField(upload_to="collection_covers/", blank=True, null=True)
     description = models.TextField(blank=True, null=True)
     published = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    #designer fields
-    designer = models.CharField(max_length=100, blank=True, null=True)  # ✅ Add this
-    cover_image = models.ImageField(upload_to='collection_covers/', blank=True, null=True)
-
+    designer = models.CharField(max_length=100, blank=True, null=True)
 
     class Meta:
         ordering = ["-year", "name"]
@@ -95,33 +91,55 @@ class Look(models.Model):
 class Design(TimeStampedModel):
     title = models.CharField(max_length=120)
     slug = models.SlugField(max_length=140, unique=True, blank=True)
-    designer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='designs')
+    designer = models.ForeignKey(User, on_delete=models.CASCADE, related_name="designs")
     season = models.CharField(max_length=50, blank=True)
     year = models.PositiveIntegerField(default=2025)
     cover_image = models.ImageField(upload_to="designs/covers/", blank=True, null=True)
     description = models.TextField(blank=True)
     published = models.BooleanField(default=True)
-    
+
+    # Classification & target audience
+    category = models.CharField(max_length=100, blank=True)
+    target_market = models.CharField(max_length=50, blank=True)
+    featured = models.BooleanField(default=False)
+
+    # Fabric & construction details
+    fabric_type = models.CharField(max_length=200, blank=True)
+    fabric_weight = models.CharField(max_length=100, blank=True)
+    fabric_details = models.TextField(blank=True, help_text="Fabric specifications and requirements")
+
+    # Commercial details
+    color_palette = models.CharField(max_length=500, blank=True, help_text="Color codes and descriptions")
+    size_range = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Available size range (e.g., XS-XL)",
+    )
+    target_price = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        blank=True,
+        null=True,
+        help_text="Target retail price",
+    )
+
+    # Notes & production details
+    production_notes = models.TextField(blank=True, help_text="Special production requirements or notes")
+    design_notes = models.TextField(blank=True, help_text="Internal notes for review before publishing")
+
     # Tech pack files
     techpack_pdf = models.FileField(
-        upload_to="designs/techpacks/pdf/", 
-        blank=True, 
+        upload_to="designs/techpacks/pdf/",
+        blank=True,
         null=True,
-        help_text="Upload tech pack as PDF file"
+        help_text="Upload tech pack as PDF file",
     )
     techpack_excel = models.FileField(
-        upload_to="designs/techpacks/excel/", 
-        blank=True, 
+        upload_to="designs/techpacks/excel/",
+        blank=True,
         null=True,
-        help_text="Upload tech pack as Excel file"
+        help_text="Upload tech pack as Excel file",
     )
-    
-    # Additional tech pack details
-    fabric_details = models.TextField(blank=True, help_text="Fabric specifications and requirements")
-    color_palette = models.CharField(max_length=500, blank=True, help_text="Color codes and descriptions")
-    size_range = models.CharField(max_length=100, blank=True, help_text="Available size range (e.g., XS-XL)")
-    target_price = models.DecimalField(max_digits=8, decimal_places=2, blank=True, null=True, help_text="Target retail price")
-    production_notes = models.TextField(blank=True, help_text="Special production requirements or notes")
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -140,6 +158,14 @@ class Design(TimeStampedModel):
     @property
     def has_techpack(self):
         return bool(self.techpack_pdf or self.techpack_excel)
+
+    @property
+    def is_public(self):
+        return self.published
+
+    @is_public.setter
+    def is_public(self, value):
+        self.published = bool(value)
     
     class Meta:
         ordering = ['-created_at']

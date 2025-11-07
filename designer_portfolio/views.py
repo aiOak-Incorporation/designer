@@ -1,9 +1,11 @@
 import base64
+import base64
 import json
-
+from decimal import Decimal, InvalidOperation
 from datetime import timedelta
+from pathlib import Path
 
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.views.generic import TemplateView, DetailView, ListView
@@ -23,7 +25,7 @@ from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.db import transaction
 from django.db.models import Q
-from django.urls import reverse_lazy
+from django.urls import reverse_lazy, reverse
 from .forms import DesignerSignUpForm, DesignerLoginForm, DesignerPasswordResetForm
 from .auth_utils import ensure_designer_access
 from .models import (
@@ -31,6 +33,7 @@ from .models import (
     SubscriptionPlan,
     UserSubscription,
     Design,
+    DesignImage,
     Collection,
     Event,
     WebAuthnCredential,
@@ -65,6 +68,170 @@ def _bytes_from_base64url(data: str) -> bytes:
         raise TypeError("data must be str")
     padding = "=" * (-len(data) % 4)
     return base64.urlsafe_b64decode(data + padding)
+
+
+def _request_wants_json(request) -> bool:
+    requested_with = (request.headers.get("x-requested-with") or "").lower()
+    if requested_with == "xmlhttprequest":
+        return True
+    accept_header = request.headers.get("Accept") or ""
+    if "application/json" in accept_header:
+        return True
+    content_type = request.headers.get("Content-Type") or ""
+    return content_type.startswith("application/json")
+
+
+def _strtobool(value) -> bool:
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        return False
+    return str(value).strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _save_design_from_request(request, *, design=None):
+    """
+    Create or update a Design instance based on the incoming request data.
+    Returns a tuple of (design_instance, errors_dict).
+    """
+
+    user = request.user
+    is_create = design is None
+    instance = design or Design(designer=user)
+
+    data = request.POST
+    files = request.FILES
+    errors = {}
+
+    # Core fields
+    title = (data.get("title") or "").strip()
+    if not title:
+        errors["title"] = "Design title is required."
+
+    season = (data.get("season") or "").strip()
+    if not season:
+        errors["season"] = "Season is required."
+
+    year_raw = (data.get("year") or "").strip()
+    year_value = instance.year
+    if year_raw:
+        try:
+            year_value = int(year_raw)
+        except ValueError:
+            errors["year"] = "Enter a valid year."
+    elif is_create:
+        errors["year"] = "Year is required."
+
+    slug_input = (data.get("slug") or "").strip()
+    if slug_input:
+        slug_qs = Design.objects.filter(slug__iexact=slug_input)
+        if instance.pk:
+            slug_qs = slug_qs.exclude(pk=instance.pk)
+        if slug_qs.exists():
+            errors["slug"] = "Another design is already using this URL slug."
+
+    cover_image_file = files.get("cover_image")
+    if is_create and not (cover_image_file or instance.cover_image):
+        errors["cover_image"] = "Please provide a cover image for this design."
+
+    target_price_value = None
+    target_price_raw = (data.get("target_price") or "").strip()
+    if target_price_raw:
+        try:
+            target_price_value = Decimal(target_price_raw)
+        except InvalidOperation:
+            errors["target_price"] = "Enter a valid price (e.g., 199.99)."
+
+    # Tech pack uploads
+    pdf_upload = files.get("techpack_pdf")
+    excel_upload = files.get("techpack_excel")
+    techpack_combo_file = files.get("techpack_file")
+    if techpack_combo_file:
+        extension = Path(techpack_combo_file.name).suffix.lower()
+        if extension == ".pdf":
+            pdf_upload = techpack_combo_file
+        elif extension in {".xls", ".xlsx"}:
+            excel_upload = techpack_combo_file
+        else:
+            errors["techpack_file"] = "Unsupported tech pack format. Upload PDF or Excel files."
+
+    additional_images = files.getlist("additional_images")
+
+    if errors:
+        return instance, errors
+
+    # Assign basic fields
+    instance.title = title
+    instance.season = season
+    instance.year = year_value
+    instance.description = (data.get("description") or "").strip()
+
+    # Classification & metadata
+    instance.category = (data.get("category") or "").strip()
+    instance.target_market = (data.get("target_market") or "").strip()
+    instance.featured = _strtobool(data.get("featured")) or _strtobool(data.get("is_featured"))
+
+    instance.fabric_type = (data.get("fabric_type") or "").strip()
+    instance.fabric_weight = (data.get("fabric_weight") or "").strip()
+    fabric_details_input = (data.get("fabric_details") or "").strip()
+    if not fabric_details_input:
+        fabric_details_input = ", ".join(
+            filter(None, [instance.fabric_type, instance.fabric_weight])
+        )
+    instance.fabric_details = fabric_details_input
+
+    instance.color_palette = (data.get("color_palette") or "").strip()
+    instance.size_range = (data.get("size_range") or "").strip()
+    instance.target_price = target_price_value
+
+    technical_notes = (
+        data.get("technical_notes")
+        or data.get("production_notes")
+        or ""
+    )
+    instance.production_notes = technical_notes.strip()
+    instance.design_notes = (data.get("design_notes") or "").strip()
+
+    published_flag = _strtobool(data.get("published")) or _strtobool(data.get("is_public"))
+    instance.published = published_flag
+
+    if slug_input:
+        instance.slug = slug_input
+
+    if cover_image_file:
+        instance.cover_image = cover_image_file
+
+    if pdf_upload:
+        instance.techpack_pdf = pdf_upload
+    if excel_upload:
+        instance.techpack_excel = excel_upload
+
+    # Validate model-level constraints
+    try:
+        instance.full_clean(exclude=["slug"])
+    except ValidationError as exc:
+        for field_name, messages_list in exc.message_dict.items():
+            if not messages_list:
+                continue
+            combined_message = " ".join(str(message) for message in messages_list)
+            errors[field_name] = combined_message
+
+    if errors:
+        return instance, errors
+
+    instance.save()
+
+    # Attach additional gallery images
+    if additional_images:
+        existing_count = instance.images.count()
+        for offset, image_file in enumerate(additional_images, start=1):
+            DesignImage.objects.create(
+                design=instance,
+                image=image_file,
+                order=existing_count + offset,
+            )
+
+    return instance, {}
 
 
 def _find_user_by_identifier(identifier: str):
@@ -666,25 +833,127 @@ def webauthn_delete_credential(request, credential_id):
     return JsonResponse({"status": "ok"})
 # Placeholder functions
 def upload_design(request):
-    return render(request, "designer_portfolio/upload_design.html", {})
+    if request.user.is_authenticated:
+        return redirect("designer_design_create")
+    return redirect("login")
+
 
 def approve_designer(request, user_id):
     return JsonResponse({"status": "ok"})
 
+
 def reject_designer(request, user_id):
     return JsonResponse({"status": "ok"})
+
 
 def reinstate_designer(request, designer_id):
     return JsonResponse({"status": "ok"})
 
+
+@login_required
 def designer_design_edit_view(request, design_id):
-    return render(request, "designer_portfolio/designer_design_edit.html", {})
+    design = get_object_or_404(Design, pk=design_id, designer=request.user)
 
+    if request.method == "POST":
+        updated_design, errors = _save_design_from_request(request, design=design)
+        if errors:
+            if _request_wants_json(request):
+                return JsonResponse({"success": False, "errors": errors}, status=400)
+
+            messages.error(request, "Please correct the highlighted errors.")
+            context = {
+                "current_section": "designs",
+                "design": updated_design,
+                "form_errors": errors,
+                "gallery_images": updated_design.images.order_by("order", "created_at"),
+            }
+            return render(
+                request,
+                "designer_portfolio/designer_design_edit.html",
+                context,
+                status=400,
+            )
+
+        state_message = "Design updated and published." if updated_design.published else "Design updated as draft."
+        messages.success(request, state_message)
+        if _request_wants_json(request):
+            return JsonResponse(
+                {
+                    "success": True,
+                    "design_id": updated_design.pk,
+                    "redirect_url": reverse("designer_designs"),
+                }
+            )
+        return redirect("designer_designs")
+
+    context = {
+        "current_section": "designs",
+        "design": design,
+        "form_errors": {},
+        "gallery_images": design.images.order_by("order", "created_at"),
+    }
+    return render(request, "designer_portfolio/designer_design_edit.html", context)
+
+
+@login_required
+@require_POST
 def designer_design_delete_view(request, design_id):
-    return render(request, "designer_portfolio/designer_design_delete.html", {})
+    design = get_object_or_404(Design, pk=design_id, designer=request.user)
+    design.delete()
 
+    messages.success(request, "Design deleted successfully.")
+    if _request_wants_json(request):
+        return JsonResponse(
+            {
+                "success": True,
+                "redirect_url": reverse("designer_designs"),
+            }
+        )
+    return redirect("designer_designs")
+
+
+@login_required
 def designer_design_detail_api(request, design_id):
-    return JsonResponse({"status": "ok"})
+    design = get_object_or_404(Design, pk=design_id, designer=request.user)
+
+    data = {
+        "id": design.pk,
+        "title": design.title,
+        "slug": design.slug,
+        "season": design.season,
+        "year": design.year,
+        "description": design.description,
+        "published": design.published,
+        "category": design.category,
+        "target_market": design.target_market,
+        "featured": design.featured,
+        "fabric_type": design.fabric_type,
+        "fabric_weight": design.fabric_weight,
+        "fabric_details": design.fabric_details,
+        "color_palette": design.color_palette,
+        "size_range": design.size_range,
+        "target_price": str(design.target_price) if design.target_price is not None else "",
+        "production_notes": design.production_notes,
+        "design_notes": design.design_notes,
+        "has_techpack": design.has_techpack,
+        "techpack_pdf": design.techpack_pdf.url if design.techpack_pdf else "",
+        "techpack_excel": design.techpack_excel.url if design.techpack_excel else "",
+        "cover_image": design.cover_image.url if design.cover_image else "",
+        "created_at": design.created_at.isoformat() if design.created_at else "",
+        "updated_at": design.updated_at.isoformat() if design.updated_at else "",
+        "detail_url": reverse("design_detail", args=[design.slug]) if design.slug else "",
+    }
+    data["images"] = [
+        {
+            "id": image.pk,
+            "url": image.image.url,
+            "order": image.order,
+            "caption": image.caption,
+        }
+        for image in design.images.order_by("order", "created_at")
+    ]
+
+    return JsonResponse({"success": True, "design": data})
 
 def subscription_dashboard(request):
     return render(request, "designer_portfolio/subscription_dashboard.html", {})
@@ -765,14 +1034,46 @@ def designer_design_create_view(request):
             next_billing_date=trial_end,
         )
 
-    return render(
-        request,
-        "designer_portfolio/designer_design_create.html",
-        {
-            "current_section": "designs",
-            "current_year": timezone.now().year,
-        },
-    )
+    context = {
+        "current_section": "designs",
+        "current_year": timezone.now().year,
+        "form_errors": {},
+        "form_values": {},
+    }
+
+    if request.method == "POST":
+        design, errors = _save_design_from_request(request)
+        if errors:
+            if _request_wants_json(request):
+                return JsonResponse({"success": False, "errors": errors}, status=400)
+
+            messages.error(request, "Please correct the highlighted errors.")
+            context["form_errors"] = errors
+            context["form_values"] = {key: value for key, value in request.POST.items()}
+            return render(
+                request,
+                "designer_portfolio/designer_design_create.html",
+                context,
+                status=400,
+            )
+
+        success_message = (
+            "Design uploaded and published." if design.published else "Design saved as draft."
+        )
+        messages.success(request, success_message)
+
+        if _request_wants_json(request):
+            return JsonResponse(
+                {
+                    "success": True,
+                    "design_id": design.pk,
+                    "redirect_url": reverse("designer_designs"),
+                }
+            )
+
+        return redirect("designer_designs")
+
+    return render(request, "designer_portfolio/designer_design_create.html", context)
 
 @login_required
 def designer_about_me_view(request):

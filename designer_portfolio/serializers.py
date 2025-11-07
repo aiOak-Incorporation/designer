@@ -88,6 +88,7 @@ class TechpackSerializer(serializers.ModelSerializer):
 class DesignSerializer(serializers.ModelSerializer):
     techpack = TechpackSerializer(read_only=True)
     images = DesignImageSerializer(many=True, read_only=True)
+    has_techpack = serializers.BooleanField(source="has_techpack", read_only=True)
 
     class Meta:
         model = Design
@@ -97,12 +98,25 @@ class DesignSerializer(serializers.ModelSerializer):
             "slug",
             "season",
             "year",
+            "category",
+            "target_market",
             "cover_image",
             "description",
             "published",
+            "featured",
+            "fabric_type",
+            "fabric_weight",
+            "fabric_details",
+            "color_palette",
+            "size_range",
+            "target_price",
+            "production_notes",
+            "design_notes",
             "created_at",
+            "updated_at",
             "techpack",
             "images",
+            "has_techpack",
         ]
 
 
