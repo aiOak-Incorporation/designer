@@ -60,11 +60,17 @@
         data-published="{{ design.published|yesno:'true,false' }}"
         data-season-display="{{ design.season|default_if_none:''|escapejs }}"
         data-year-display="{{ design.year }}"
+          data-category="{{ design.category|default_if_none:''|escapejs }}"
+          data-target-market="{{ design.target_market|default_if_none:''|escapejs }}"
         data-fabric-details="{{ design.fabric_details|default_if_none:''|escapejs }}"
+          data-fabric-type="{{ design.fabric_type|default_if_none:''|escapejs }}"
+          data-fabric-weight="{{ design.fabric_weight|default_if_none:''|escapejs }}"
         data-color-palette="{{ design.color_palette|default_if_none:''|escapejs }}"
         data-size-range="{{ design.size_range|default_if_none:''|escapejs }}"
         data-target-price="{{ design.target_price|default_if_none:'' }}"
         data-production-notes="{{ design.production_notes|default_if_none:''|escapejs }}"
+          data-design-notes="{{ design.design_notes|default_if_none:''|escapejs }}"
+          data-featured="{{ design.featured|yesno:'true,false' }}"
         data-techpack-pdf="{% if design.techpack_pdf %}{{ design.techpack_pdf.url }}{% endif %}"
         data-techpack-excel="{% if design.techpack_excel %}{{ design.techpack_excel.url }}{% endif %}"
         data-has-techpack="{{ design.has_techpack|yesno:'true,false' }}"
@@ -565,11 +571,17 @@ function handleDesignModal(trigger) {
     season: data.seasonDisplay || data.season || "",
     year: data.yearDisplay || data.year || "",
     published: data.published === "true",
+    featured: data.featured === "true",
+    category: data.category || "",
+    target_market: data.targetMarket || "",
     fabric_details: data.fabricDetails || "",
+    fabric_type: data.fabricType || "",
+    fabric_weight: data.fabricWeight || "",
     color_palette: data.colorPalette || "",
     size_range: data.sizeRange || "",
     target_price: data.targetPrice || "",
     production_notes: data.productionNotes || "",
+    design_notes: data.designNotes || "",
     techpack_pdf: data.techpackPdf || "",
     techpack_excel: data.techpackExcel || "",
     has_techpack: data.hasTechpack === "true",

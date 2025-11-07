@@ -40,35 +40,47 @@
 
           <!-- Basic Information -->
           <div class="bg-gray-50 p-4 rounded-lg">
-            <h4 class="font-semibold text-lg mb-3 text-gray-800">
-              Basic Information
-            </h4>
-              <div class="space-y-2 text-sm">
-                <div class="flex justify-between">
-                  <span class="text-gray-600">Season:</span>
-                  <span id="modalSeason" class="font-medium"></span>
+              <h4 class="font-semibold text-lg mb-3 text-gray-800">
+                Basic Information
+              </h4>
+                <div class="space-y-2 text-sm">
+                  <div class="flex justify-between">
+                    <span class="text-gray-600">Season:</span>
+                    <span id="modalSeason" class="font-medium"></span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-gray-600">Year:</span>
+                    <span id="modalYear" class="font-medium"></span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-gray-600">Category:</span>
+                    <span id="modalCategory" class="font-medium"></span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-gray-600">Target Market:</span>
+                    <span id="modalTargetMarket" class="font-medium"></span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-gray-600">Status:</span>
+                    <span id="modalStatus" class="font-medium"></span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-gray-600">Featured:</span>
+                    <span id="modalFeatured" class="font-medium"></span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-gray-600">Tech Pack:</span>
+                    <span id="modalTechpackState" class="font-medium"></span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-gray-600">Created:</span>
+                    <span id="modalCreated" class="font-medium"></span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-gray-600">Updated:</span>
+                    <span id="modalUpdated" class="font-medium"></span>
+                  </div>
                 </div>
-                <div class="flex justify-between">
-                  <span class="text-gray-600">Year:</span>
-                  <span id="modalYear" class="font-medium"></span>
-                </div>
-                <div class="flex justify-between">
-                  <span class="text-gray-600">Created:</span>
-                  <span id="modalCreated" class="font-medium"></span>
-                </div>
-                <div class="flex justify-between">
-                  <span class="text-gray-600">Updated:</span>
-                  <span id="modalUpdated" class="font-medium"></span>
-                </div>
-                <div class="flex justify-between">
-                  <span class="text-gray-600">Status:</span>
-                  <span id="modalStatus" class="font-medium"></span>
-                </div>
-                <div class="flex justify-between">
-                  <span class="text-gray-600">Tech Pack:</span>
-                  <span id="modalTechpackState" class="font-medium"></span>
-                </div>
-              </div>
           </div>
         </div>
 
@@ -86,31 +98,39 @@
           </div>
 
           <!-- Design Specifications -->
-          <div class="bg-blue-50 p-4 rounded-lg mb-4">
-            <h4 class="font-semibold text-lg mb-3 text-gray-800">
-              Design Specifications
-            </h4>
-              <div class="grid grid-cols-2 gap-3 text-sm">
-                <div>
-                  <span class="text-gray-600 block">Fabric Details:</span>
-                  <span id="modalFabricDetails" class="font-medium"></span>
+            <div class="bg-blue-50 p-4 rounded-lg mb-4">
+              <h4 class="font-semibold text-lg mb-3 text-gray-800">
+                Design Specifications
+              </h4>
+                <div class="grid md:grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <span class="text-gray-600 block">Fabric Type:</span>
+                    <span id="modalFabricType" class="font-medium"></span>
+                  </div>
+                  <div>
+                    <span class="text-gray-600 block">Fabric Weight:</span>
+                    <span id="modalFabricWeight" class="font-medium"></span>
+                  </div>
+                  <div>
+                    <span class="text-gray-600 block">Fabric Details:</span>
+                    <span id="modalFabricDetails" class="font-medium"></span>
+                  </div>
+                  <div>
+                    <span class="text-gray-600 block">Target Price:</span>
+                    <span id="modalTargetPrice" class="font-medium text-green-600"></span>
+                  </div>
+                  <div>
+                    <span class="text-gray-600 block">Color Palette:</span>
+                    <span id="modalColorPalette" class="font-medium"></span>
+                  </div>
+                  <div>
+                    <span class="text-gray-600 block">Size Range:</span>
+                    <span id="modalSizeRange" class="font-medium"></span>
+                  </div>
                 </div>
-                <div>
-                  <span class="text-gray-600 block">Target Price:</span>
-                  <span id="modalTargetPrice" class="font-medium text-green-600"></span>
-                </div>
-              <div>
-                <span class="text-gray-600 block">Color Palette:</span>
-                <span id="modalColorPalette" class="font-medium"></span>
-              </div>
-              <div>
-                <span class="text-gray-600 block">Size Range:</span>
-                <span id="modalSizeRange" class="font-medium"></span>
-              </div>
             </div>
-          </div>
 
-          <!-- Tech Pack Files -->
+            <!-- Tech Pack Files -->
           <div class="bg-green-50 p-4 rounded-lg mb-4">
             <h4 class="font-semibold text-lg mb-3 text-gray-800">
               Tech Pack Files
@@ -177,6 +197,19 @@
               ></p>
             </div>
 
+              <div
+                id="modalDesignNotesContainer"
+                class="bg-purple-50 p-4 rounded-lg mb-4 hidden"
+              >
+                <h4 class="font-semibold text-lg mb-2 text-gray-800">
+                  Internal Notes
+                </h4>
+                <p
+                  id="modalDesignNotes"
+                  class="text-gray-700 text-sm leading-relaxed"
+                ></p>
+              </div>
+
           <!-- Visibility Settings -->
           <div class="bg-purple-50 p-4 rounded-lg">
             <h4 class="font-semibold text-lg mb-3 text-gray-800">
@@ -232,8 +265,11 @@
     // Populate modal with design data
     const coverImage = document.getElementById("modalImage");
     const titleEl = document.getElementById("modalTitle");
-    const seasonEl = document.getElementById("modalSeason");
+      const seasonEl = document.getElementById("modalSeason");
     const yearEl = document.getElementById("modalYear");
+      const categoryEl = document.getElementById("modalCategory");
+      const targetEl = document.getElementById("modalTargetMarket");
+      const featuredEl = document.getElementById("modalFeatured");
     const createdEl = document.getElementById("modalCreated");
     const updatedEl = document.getElementById("modalUpdated");
     const statusEl = document.getElementById("modalStatus");
@@ -246,6 +282,11 @@
     coverImage.alt = designData.title || "Design cover";
     seasonEl.textContent = formatSeason(designData.season);
     yearEl.textContent = designData.year || "—";
+      categoryEl.textContent = formatLabel(designData.category);
+      targetEl.textContent = formatLabel(designData.target_market);
+      featuredEl.textContent = designData.featured ? "Featured" : "Standard";
+      featuredEl.classList.remove("text-green-600", "text-gray-600");
+      featuredEl.classList.add(designData.featured ? "text-green-600" : "text-gray-600");
     createdEl.textContent = formatDate(designData.created_at);
     updatedEl.textContent = formatDate(designData.updated_at);
     statusEl.textContent = designData.published ? "Published" : "Draft";
@@ -256,6 +297,10 @@
       designData.description?.trim() || "No description available";
 
     // Design specifications
+      document.getElementById("modalFabricType").textContent =
+        designData.fabric_type || "Not specified";
+      document.getElementById("modalFabricWeight").textContent =
+        designData.fabric_weight || "Not specified";
     document.getElementById("modalFabricDetails").textContent =
       designData.fabric_details || "Not specified";
     document.getElementById("modalTargetPrice").textContent = formatPrice(
@@ -302,6 +347,15 @@
       notesContainer.classList.add("hidden");
     }
 
+      const designNotesContainer = document.getElementById("modalDesignNotesContainer");
+      if (designData.design_notes && designData.design_notes.trim()) {
+        document.getElementById("modalDesignNotes").textContent =
+          designData.design_notes;
+        designNotesContainer.classList.remove("hidden");
+      } else {
+        designNotesContainer.classList.add("hidden");
+      }
+
     // Visibility settings
     const publicIcon = document.getElementById("modalPublicIcon");
     const publicText = document.getElementById("modalPublicText");
@@ -342,15 +396,19 @@
     document.body.style.overflow = "auto";
   }
 
-  function formatSeason(season) {
-    if (!season) {
-      return "Not specified";
+    function formatLabel(value) {
+      if (!value) {
+        return "Not specified";
+      }
+      return value
+        .toString()
+        .replace(/_/g, " ")
+        .replace(/\b\w/g, (char) => char.toUpperCase());
     }
-    return season
-      .toString()
-      .replace(/_/g, " ")
-      .replace(/\b\w/g, (char) => char.toUpperCase());
-  }
+
+    function formatSeason(season) {
+      return formatLabel(season);
+    }
 
   function formatDate(dateString) {
     if (!dateString) return "Not available";
