@@ -19,22 +19,47 @@
         <div class="grid md:grid-cols-2 gap-6">
             <div>
                 <label for="title" class="block text-sm font-medium text-gray-700 mb-2">Design Title *</label>
-                <input type="text" id="title" name="title" value="{{ design.title }}" required
-                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                <input type="text" id="title" name="title" value="{{ form_data.title }}" required
+                       class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:border-transparent {% if form_errors.title %}border-red-500 focus:ring-red-500{% else %}border-gray-300 focus:ring-blue-500{% endif %}">
+                {% if form_errors.title %}
+                    <p class="text-sm text-red-600 mt-1">{{ form_errors.title }}</p>
+                {% endif %}
             </div>
             
             <div>
                 <label for="category" class="block text-sm font-medium text-gray-700 mb-2">Category *</label>
                 <select id="category" name="category" required
+                        class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:border-transparent {% if form_errors.category %}border-red-500 focus:ring-red-500{% else %}border-gray-300 focus:ring-blue-500{% endif %}">
+                    <option value="" {% if not form_data.category %}selected{% endif %}>Select Category</option>
+                    <option value="tops" {% if form_data.category == 'tops' %}selected{% endif %}>Tops</option>
+                    <option value="bottoms" {% if form_data.category == 'bottoms' %}selected{% endif %}>Bottoms</option>
+                    <option value="dresses" {% if form_data.category == 'dresses' %}selected{% endif %}>Dresses</option>
+                    <option value="outerwear" {% if form_data.category == 'outerwear' %}selected{% endif %}>Outerwear</option>
+                    <option value="accessories" {% if form_data.category == 'accessories' %}selected{% endif %}>Accessories</option>
+                    <option value="footwear" {% if form_data.category == 'footwear' %}selected{% endif %}>Footwear</option>
+                    <option value="swimwear" {% if form_data.category == 'swimwear' %}selected{% endif %}>Swimwear</option>
+                    <option value="activewear" {% if form_data.category == 'activewear' %}selected{% endif %}>Activewear</option>
+                    <option value="lingerie" {% if form_data.category == 'lingerie' %}selected{% endif %}>Lingerie</option>
+                    <option value="other" {% if form_data.category == 'other' %}selected{% endif %}>Other</option>
+                </select>
+                {% if form_errors.category %}
+                    <p class="text-sm text-red-600 mt-1">{{ form_errors.category }}</p>
+                {% endif %}
+            </div>
+
+            <div class="md:col-span-2">
+                <label for="target_market" class="block text-sm font-medium text-gray-700 mb-2">Target Market</label>
+                <select id="target_market" name="target_market"
                         class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                    <option value="">Select Category</option>
-                    <option value="casual" {% if design.category == 'casual' %}selected{% endif %}>Casual Wear</option>
-                    <option value="formal" {% if design.category == 'formal' %}selected{% endif %}>Formal Wear</option>
-                    <option value="ethnic" {% if design.category == 'ethnic' %}selected{% endif %}>Ethnic Wear</option>
-                    <option value="sportswear" {% if design.category == 'sportswear' %}selected{% endif %}>Sportswear</option>
-                    <option value="accessories" {% if design.category == 'accessories' %}selected{% endif %}>Accessories</option>
-                    <option value="footwear" {% if design.category == 'footwear' %}selected{% endif %}>Footwear</option>
-                    <option value="other" {% if design.category == 'other' %}selected{% endif %}>Other</option>
+                    <option value="" {% if not form_data.target_market %}selected{% endif %}>Select Target Market</option>
+                    <option value="womens" {% if form_data.target_market == 'womens' %}selected{% endif %}>Women's</option>
+                    <option value="mens" {% if form_data.target_market == 'mens' %}selected{% endif %}>Men's</option>
+                    <option value="unisex" {% if form_data.target_market == 'unisex' %}selected{% endif %}>Unisex</option>
+                    <option value="kids" {% if form_data.target_market == 'kids' %}selected{% endif %}>Kids</option>
+                    <option value="teen" {% if form_data.target_market == 'teen' %}selected{% endif %}>Teen</option>
+                    <option value="plus_size" {% if form_data.target_market == 'plus_size' %}selected{% endif %}>Plus Size</option>
+                    <option value="petite" {% if form_data.target_market == 'petite' %}selected{% endif %}>Petite</option>
+                    <option value="maternity" {% if form_data.target_market == 'maternity' %}selected{% endif %}>Maternity</option>
                 </select>
             </div>
         </div>
@@ -44,7 +69,7 @@
             <label for="description" class="block text-sm font-medium text-gray-700 mb-2">Description *</label>
             <textarea id="description" name="description" rows="4" required
                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Describe your design...">{{ design.description }}</textarea>
+                      placeholder="Describe your design...">{{ form_data.description }}</textarea>
         </div>
 
         <!-- Cover Image -->
@@ -59,6 +84,9 @@
             <input type="file" id="cover_image" name="cover_image" accept="image/*"
                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
             <p class="text-xs text-gray-500 mt-1">Leave empty to keep current image. Supported formats: JPG, PNG, GIF (Max 5MB)</p>
+            {% if form_errors.cover_image %}
+                <p class="text-sm text-red-600 mt-1">{{ form_errors.cover_image }}</p>
+            {% endif %}
         </div>
 
         <!-- Design Specifications -->
@@ -68,23 +96,26 @@
             <div class="grid md:grid-cols-2 gap-4">
                 <div>
                     <label for="fabric_type" class="block text-sm font-medium text-gray-700 mb-2">Fabric Type</label>
-                    <input type="text" id="fabric_type" name="fabric_type" value="{{ design.fabric_type }}"
+                    <input type="text" id="fabric_type" name="fabric_type" value="{{ form_data.fabric_type }}"
                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                            placeholder="e.g., Cotton, Silk, Polyester">
                 </div>
                 
                 <div>
                     <label for="target_price" class="block text-sm font-medium text-gray-700 mb-2">Target Price ($)</label>
-                    <input type="number" id="target_price" name="target_price" value="{{ design.target_price }}" step="0.01" min="0"
-                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    <input type="number" id="target_price" name="target_price" value="{{ form_data.target_price }}" step="0.01" min="0"
+                           class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:border-transparent {% if form_errors.target_price %}border-red-500 focus:ring-red-500{% else %}border-gray-300 focus:ring-blue-500{% endif %}"
                            placeholder="0.00">
+                    {% if form_errors.target_price %}
+                        <p class="text-sm text-red-600 mt-1">{{ form_errors.target_price }}</p>
+                    {% endif %}
                 </div>
             </div>
 
             <div class="grid md:grid-cols-3 gap-4 mt-4">
                 <div>
                     <label for="color_palette" class="block text-sm font-medium text-gray-700 mb-2">Color Palette</label>
-                    <input type="text" id="color_palette" name="color_palette" value="{{ design.color_palette }}"
+                    <input type="text" id="color_palette" name="color_palette" value="{{ form_data.color_palette }}"
                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                            placeholder="e.g., Blue, White, Navy">
                 </div>
@@ -93,18 +124,28 @@
                     <label for="season" class="block text-sm font-medium text-gray-700 mb-2">Season</label>
                     <select id="season" name="season"
                             class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                        <option value="">Select Season</option>
-                        <option value="spring" {% if design.season == 'spring' %}selected{% endif %}>Spring</option>
-                        <option value="summer" {% if design.season == 'summer' %}selected{% endif %}>Summer</option>
-                        <option value="fall" {% if design.season == 'fall' %}selected{% endif %}>Fall</option>
-                        <option value="winter" {% if design.season == 'winter' %}selected{% endif %}>Winter</option>
-                        <option value="all_season" {% if design.season == 'all_season' %}selected{% endif %}>All Season</option>
+                        <option value="" {% if not form_data.season %}selected{% endif %}>Select Season</option>
+                        <option value="Spring" {% if form_data.season == 'Spring' %}selected{% endif %}>Spring</option>
+                        <option value="Summer" {% if form_data.season == 'Summer' %}selected{% endif %}>Summer</option>
+                        <option value="Fall" {% if form_data.season == 'Fall' %}selected{% endif %}>Fall</option>
+                        <option value="Winter" {% if form_data.season == 'Winter' %}selected{% endif %}>Winter</option>
+                        <option value="Resort" {% if form_data.season == 'Resort' %}selected{% endif %}>Resort</option>
+                        <option value="Pre-Fall" {% if form_data.season == 'Pre-Fall' %}selected{% endif %}>Pre-Fall</option>
                     </select>
                 </div>
                 
                 <div>
+                    <label for="year" class="block text-sm font-medium text-gray-700 mb-2">Year</label>
+                    <input type="number" id="year" name="year" value="{{ form_data.year }}" min="2020" max="2030"
+                           class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:border-transparent {% if form_errors.year %}border-red-500 focus:ring-red-500{% else %}border-gray-300 focus:ring-blue-500{% endif %}">
+                    {% if form_errors.year %}
+                        <p class="text-sm text-red-600 mt-1">{{ form_errors.year }}</p>
+                    {% endif %}
+                </div>
+                
+                <div>
                     <label for="size_range" class="block text-sm font-medium text-gray-700 mb-2">Size Range</label>
-                    <input type="text" id="size_range" name="size_range" value="{{ design.size_range }}"
+                    <input type="text" id="size_range" name="size_range" value="{{ form_data.size_range }}"
                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                            placeholder="e.g., XS-XL, 28-40">
                 </div>
@@ -116,14 +157,14 @@
             <h3 class="text-lg font-semibold text-gray-800 mb-4">Tech Pack Files</h3>
             
             <!-- Current Tech Pack PDF -->
-            {% if design.tech_pack_pdf %}
+            {% if design.techpack_pdf %}
                 <div class="mb-4 p-3 bg-white rounded border">
                     <div class="flex items-center justify-between">
                         <div>
                             <i class="fas fa-file-pdf text-red-500 mr-2"></i>
                             <span class="text-sm font-medium">Current PDF Tech Pack</span>
                         </div>
-                        <a href="{{ design.tech_pack_pdf.url }}" target="_blank" 
+                        <a href="{{ design.techpack_pdf.url }}" target="_blank" 
                            class="text-blue-600 hover:text-blue-800 text-sm">
                             <i class="fas fa-download mr-1"></i>Download
                         </a>
@@ -139,14 +180,14 @@
             </div>
 
             <!-- Current Tech Pack Excel -->
-            {% if design.tech_pack_excel %}
+            {% if design.techpack_excel %}
                 <div class="mt-4 mb-4 p-3 bg-white rounded border">
                     <div class="flex items-center justify-between">
                         <div>
                             <i class="fas fa-file-excel text-green-500 mr-2"></i>
                             <span class="text-sm font-medium">Current Excel Tech Pack</span>
                         </div>
-                        <a href="{{ design.tech_pack_excel.url }}" target="_blank" 
+                        <a href="{{ design.techpack_excel.url }}" target="_blank" 
                            class="text-blue-600 hover:text-blue-800 text-sm">
                             <i class="fas fa-download mr-1"></i>Download
                         </a>
@@ -164,10 +205,10 @@
 
         <!-- Additional Details -->
         <div>
-            <label for="design_notes" class="block text-sm font-medium text-gray-700 mb-2">Design Notes</label>
-            <textarea id="design_notes" name="design_notes" rows="3"
+            <label for="technical_notes" class="block text-sm font-medium text-gray-700 mb-2">Design Notes</label>
+            <textarea id="technical_notes" name="technical_notes" rows="3"
                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Any additional notes or special instructions...">{{ design.design_notes }}</textarea>
+                      placeholder="Any additional notes or special instructions...">{{ form_data.technical_notes }}</textarea>
         </div>
 
         <!-- Visibility Settings -->
@@ -176,13 +217,13 @@
             
             <div class="space-y-3">
                 <label class="flex items-center">
-                    <input type="checkbox" name="is_public" {% if design.is_public %}checked{% endif %}
+                      <input type="checkbox" name="is_public" value="true" {% if form_data.is_public|default:''|lower in 'true,on,1' %}checked{% endif %}
                            class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
                     <span class="ml-2 text-sm text-gray-700">Make this design public (visible to potential clients)</span>
                 </label>
                 
                 <label class="flex items-center">
-                    <input type="checkbox" name="is_featured" {% if design.is_featured %}checked{% endif %}
+                      <input type="checkbox" name="is_featured" value="true" {% if form_data.is_featured|default:''|lower in 'true,on,1' %}checked{% endif %}
                            class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
                     <span class="ml-2 text-sm text-gray-700">Feature this design (highlight in portfolio)</span>
                 </label>

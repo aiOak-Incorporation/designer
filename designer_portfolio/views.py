@@ -2,8 +2,9 @@ import base64
 import json
 
 from datetime import timedelta
+from decimal import Decimal, InvalidOperation
 
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.views.generic import TemplateView, DetailView, ListView
@@ -23,7 +24,7 @@ from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.db import transaction
 from django.db.models import Q
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from .forms import DesignerSignUpForm, DesignerLoginForm, DesignerPasswordResetForm
 from .auth_utils import ensure_designer_access
 from .models import (
@@ -31,10 +32,12 @@ from .models import (
     SubscriptionPlan,
     UserSubscription,
     Design,
+    DesignImage,
     Collection,
     Event,
     WebAuthnCredential,
 )
+from django.utils.text import slugify
 
 from webauthn import (
     generate_authentication_options,
@@ -81,6 +84,101 @@ def _find_user_by_identifier(identifier: str):
             return UserModel.objects.get(email__iexact=identifier)
         except UserModel.DoesNotExist:
             return None
+
+
+def _ensure_designer_bootstrap(user):
+    """Ensure the authenticated designer has the related profile and subscription records."""
+    DesignerProfile.objects.get_or_create(user=user)
+    if not hasattr(user, "subscription"):
+        trial_end = timezone.now() + timedelta(days=30)
+        UserSubscription.objects.create(
+            user=user,
+            plan=None,
+            status="free_trial",
+            payment_method=None,
+            trial_end_date=trial_end,
+            next_billing_date=trial_end,
+        )
+
+
+def _is_json_request(request) -> bool:
+    requested_with = (request.headers.get("x-requested-with") or "").lower()
+    if requested_with == "xmlhttprequest":
+        return True
+    accept_header = (request.headers.get("accept") or "").lower()
+    return "application/json" in accept_header
+
+
+def _parse_bool(value) -> bool:
+    if value is None:
+        return False
+    if isinstance(value, bool):
+        return value
+    return str(value).strip().lower() in {"1", "true", "on", "yes"}
+
+
+def _coerce_decimal(value, field_name, errors):
+    raw = (value or "").strip()
+    if not raw:
+        return None
+    try:
+        return Decimal(raw)
+    except (InvalidOperation, ValueError):
+        errors[field_name] = "Enter a valid number."
+        return None
+
+
+def _resolve_design_slug(title: str, year: int, slug_candidate: str, *, instance=None) -> str:
+    base_slug = slugify(slug_candidate or f"{title}-{year}")
+    if not base_slug:
+        base_slug = "design"
+
+    existing_qs = Design.objects.all()
+    if instance is not None:
+        existing_qs = existing_qs.exclude(pk=instance.pk)
+
+    slug = base_slug
+    suffix = 1
+    while existing_qs.filter(slug=slug).exists():
+        slug = f"{base_slug}-{suffix}"
+        suffix += 1
+    return slug
+
+
+def _assign_techpack_file(design: Design, uploaded_file):
+    """Assign uploaded techpack file to the appropriate field based on extension."""
+    if not uploaded_file:
+        return
+
+    name = (uploaded_file.name or "").lower()
+    if name.endswith(".pdf"):
+        design.techpack_pdf = uploaded_file
+        return
+    if name.endswith(".xlsx") or name.endswith(".xls"):
+        design.techpack_excel = uploaded_file
+        return
+    # Fallback to PDF field to avoid dropping the upload
+    design.techpack_pdf = uploaded_file
+
+
+def _design_form_defaults(design: Design) -> dict:
+    return {
+        "title": design.title or "",
+        "category": design.category or "",
+        "target_market": design.target_market or "",
+        "season": design.season or "",
+        "year": str(design.year) if design.year is not None else "",
+        "description": design.description or "",
+        "fabric_type": design.fabric_details or "",
+        "fabric_weight": design.fabric_weight or "",
+        "color_palette": design.color_palette or "",
+        "target_price": str(design.target_price) if design.target_price is not None else "",
+        "size_range": design.size_range or "",
+        "technical_notes": design.production_notes or "",
+        "has_techpack": "true" if design.has_techpack else "",
+        "is_public": "true" if design.published else "",
+        "is_featured": "true" if design.is_featured else "",
+    }
 
 def signup_view(request):
     if request.method == "POST":
@@ -677,14 +775,187 @@ def reject_designer(request, user_id):
 def reinstate_designer(request, designer_id):
     return JsonResponse({"status": "ok"})
 
+@login_required
 def designer_design_edit_view(request, design_id):
-    return render(request, "designer_portfolio/designer_design_edit.html", {})
+    design = get_object_or_404(Design, pk=design_id, designer=request.user)
+    _ensure_designer_bootstrap(request.user)
 
+    if request.method == "POST":
+        return _handle_design_update(request, design)
+
+    initial_form_data = _design_form_defaults(design)
+
+    return render(
+        request,
+        "designer_portfolio/designer_design_edit.html",
+        {
+            "current_section": "designs",
+            "design": design,
+            "design_images": list(design.images.order_by("order", "created_at")),
+            "form_errors": {},
+            "form_data": initial_form_data,
+        },
+    )
+
+
+def _handle_design_update(request, design: Design):
+    form_data = request.POST.copy()
+    files = request.FILES
+    errors = {}
+    initial_form_data = _design_form_defaults(design)
+
+    title = (form_data.get("title") or "").strip()
+    if not title:
+        errors["title"] = "Design title is required."
+
+    season = (form_data.get("season") or "").strip()
+    if not season:
+        errors["season"] = "Please select a season."
+
+    year_raw = (form_data.get("year") or "").strip()
+    try:
+        year = int(year_raw)
+    except (TypeError, ValueError):
+        errors["year"] = "Enter a valid year."
+        year = design.year
+
+    published = _parse_bool(form_data.get("is_public") or form_data.get("published"))
+    cover_image = files.get("cover_image")
+    if published and not (cover_image or design.cover_image):
+        errors["cover_image"] = "A cover image is required before publishing."
+
+    target_price = _coerce_decimal(form_data.get("target_price"), "target_price", errors)
+
+    slug_candidate = (form_data.get("slug") or design.slug or "").strip()
+
+    if errors:
+        submitted_data = form_data.dict()
+        merged_form_data = {**initial_form_data, **submitted_data}
+        return _render_design_form_with_errors(
+            request,
+            template="designer_portfolio/designer_design_edit.html",
+            form_data=submitted_data,
+            errors=errors,
+            context_extra={
+                "design": design,
+                "design_images": list(design.images.order_by("order", "created_at")),
+                "form_data": merged_form_data,
+            },
+            status=400,
+        )
+
+    design.title = title
+    design.slug = _resolve_design_slug(title, year, slug_candidate, instance=design)
+    design.category = (form_data.get("category") or "").strip()
+    design.target_market = (form_data.get("target_market") or "").strip()
+    design.season = season
+    design.year = year
+    design.description = (form_data.get("description") or "").strip()
+    design.published = published
+    design.is_featured = _parse_bool(form_data.get("is_featured") or form_data.get("featured"))
+    design.fabric_details = (form_data.get("fabric_type") or "").strip()
+    design.fabric_weight = (form_data.get("fabric_weight") or "").strip()
+    design.color_palette = (form_data.get("color_palette") or "").strip()
+    design.size_range = (form_data.get("size_range") or "").strip()
+    design.production_notes = (
+        (form_data.get("technical_notes") or form_data.get("design_notes") or "").strip()
+    )
+    if cover_image:
+        design.cover_image = cover_image
+    if target_price is not None:
+        design.target_price = target_price
+    else:
+        design.target_price = None
+
+    techpack_upload = files.get("techpack_file")
+    techpack_pdf_upload = files.get("tech_pack_pdf")
+    techpack_excel_upload = files.get("tech_pack_excel")
+
+    _assign_techpack_file(design, techpack_upload)
+    if techpack_pdf_upload:
+        design.techpack_pdf = techpack_pdf_upload
+    if techpack_excel_upload:
+        design.techpack_excel = techpack_excel_upload
+
+    additional_images = files.getlist("additional_images")
+
+    with transaction.atomic():
+        design.save()
+
+        existing_count = design.images.count()
+        for index, image_file in enumerate(additional_images, start=existing_count):
+            if image_file:
+                DesignImage.objects.create(design=design, image=image_file, order=index)
+
+    messages.success(request, "Design updated successfully.")
+
+    if _is_json_request(request):
+        return JsonResponse(
+            {
+                "status": "ok",
+                "design_id": design.pk,
+                "redirect_url": reverse("designer_designs"),
+            }
+        )
+
+    return redirect("designer_designs")
+
+
+@login_required
+@require_POST
 def designer_design_delete_view(request, design_id):
-    return render(request, "designer_portfolio/designer_design_delete.html", {})
+    design = get_object_or_404(Design, pk=design_id, designer=request.user)
+    design.delete()
 
+    messages.success(request, "Design deleted successfully.")
+
+    if _is_json_request(request):
+        return JsonResponse({"status": "ok", "redirect_url": reverse("designer_designs")})
+
+    return redirect("designer_designs")
+
+
+@login_required
 def designer_design_detail_api(request, design_id):
-    return JsonResponse({"status": "ok"})
+    design = get_object_or_404(Design, pk=design_id, designer=request.user)
+    images = [
+        {
+            "id": image.pk,
+            "url": image.image.url if image.image else "",
+            "caption": image.caption or "",
+            "order": image.order,
+        }
+        for image in design.images.order_by("order", "created_at")
+    ]
+
+    data = {
+        "id": design.pk,
+        "title": design.title,
+        "slug": design.slug,
+        "category": design.category,
+        "target_market": design.target_market,
+        "season": design.season,
+        "year": design.year,
+        "description": design.description,
+        "published": design.published,
+        "is_featured": design.is_featured,
+        "is_public": design.is_public,
+        "fabric_details": design.fabric_details,
+        "fabric_weight": design.fabric_weight,
+        "color_palette": design.color_palette,
+        "size_range": design.size_range,
+        "target_price": str(design.target_price) if design.target_price is not None else None,
+        "production_notes": design.production_notes,
+        "cover_image": design.cover_image.url if design.cover_image else "",
+        "techpack_pdf": design.techpack_pdf.url if design.techpack_pdf else "",
+        "techpack_excel": design.techpack_excel.url if design.techpack_excel else "",
+        "has_techpack": design.has_techpack,
+        "created_at": design.created_at.isoformat(),
+        "updated_at": design.updated_at.isoformat(),
+        "images": images,
+    }
+
+    return JsonResponse({"status": "ok", "design": data})
 
 def subscription_dashboard(request):
     return render(request, "designer_portfolio/subscription_dashboard.html", {})
@@ -723,17 +994,7 @@ def dashboard_view(request):
 @login_required
 def designer_designs_view(request):
     # Ensure related records exist
-    DesignerProfile.objects.get_or_create(user=request.user)
-    if not hasattr(request.user, "subscription"):
-        trial_end = timezone.now() + timedelta(days=30)
-        UserSubscription.objects.create(
-            user=request.user,
-            plan=None,
-            status="free_trial",
-            payment_method=None,
-            trial_end_date=trial_end,
-            next_billing_date=trial_end,
-        )
+    _ensure_designer_bootstrap(request.user)
 
     designs = Design.objects.filter(designer=request.user).order_by("-created_at")
     available_years = (
@@ -753,17 +1014,10 @@ def designer_designs_view(request):
 @login_required
 def designer_design_create_view(request):
     # Ensure related records exist
-    DesignerProfile.objects.get_or_create(user=request.user)
-    if not hasattr(request.user, "subscription"):
-        trial_end = timezone.now() + timedelta(days=30)
-        UserSubscription.objects.create(
-            user=request.user,
-            plan=None,
-            status="free_trial",
-            payment_method=None,
-            trial_end_date=trial_end,
-            next_billing_date=trial_end,
-        )
+    _ensure_designer_bootstrap(request.user)
+
+    if request.method == "POST":
+        return _handle_design_create(request)
 
     return render(
         request,
@@ -771,25 +1025,151 @@ def designer_design_create_view(request):
         {
             "current_section": "designs",
             "current_year": timezone.now().year,
+            "form_data": {},
+            "form_errors": {},
         },
     )
+
+
+def _handle_design_create(request):
+    form_data = request.POST.copy()
+    files = request.FILES
+    errors = {}
+
+    title = (form_data.get("title") or "").strip()
+    if not title:
+        errors["title"] = "Design title is required."
+
+    season = (form_data.get("season") or "").strip()
+    if not season:
+        errors["season"] = "Please select a season."
+
+    year_raw = (form_data.get("year") or "").strip()
+    try:
+        year = int(year_raw)
+    except (TypeError, ValueError):
+        errors["year"] = "Enter a valid year."
+        year = timezone.now().year
+
+    published = _parse_bool(form_data.get("published"))
+    cover_image = files.get("cover_image")
+    if not cover_image and published:
+        errors["cover_image"] = "A cover image is required before publishing."
+
+    target_price = _coerce_decimal(form_data.get("target_price"), "target_price", errors)
+
+    slug_candidate = (form_data.get("slug") or "").strip()
+
+    if errors:
+        if not published and "cover_image" in errors:
+            # Allow drafts without a cover image
+            errors.pop("cover_image")
+        if errors:
+            return _render_design_form_with_errors(
+                request,
+                template="designer_portfolio/designer_design_create.html",
+                form_data=form_data,
+                errors=errors,
+                status=400,
+            )
+
+    slug = _resolve_design_slug(title, year, slug_candidate)
+    techpack_upload = files.get("techpack_file")
+    techpack_pdf_upload = files.get("tech_pack_pdf")
+    techpack_excel_upload = files.get("tech_pack_excel")
+    additional_images = files.getlist("additional_images")
+
+    with transaction.atomic():
+        design = Design(
+            designer=request.user,
+            title=title,
+            slug=slug,
+            category=(form_data.get("category") or "").strip(),
+            target_market=(form_data.get("target_market") or "").strip(),
+            season=season,
+            year=year,
+            description=(form_data.get("description") or "").strip(),
+            published=published,
+            is_featured=_parse_bool(form_data.get("featured") or form_data.get("is_featured")),
+            fabric_details=(form_data.get("fabric_type") or "").strip(),
+            fabric_weight=(form_data.get("fabric_weight") or "").strip(),
+            color_palette=(form_data.get("color_palette") or "").strip(),
+            size_range=(form_data.get("size_range") or "").strip(),
+            production_notes=(
+                (form_data.get("technical_notes") or form_data.get("design_notes") or "").strip()
+            ),
+        )
+        if cover_image:
+            design.cover_image = cover_image
+        if target_price is not None:
+            design.target_price = target_price
+
+        _assign_techpack_file(design, techpack_upload)
+        if techpack_pdf_upload:
+            design.techpack_pdf = techpack_pdf_upload
+        if techpack_excel_upload:
+            design.techpack_excel = techpack_excel_upload
+
+        design.save()
+
+        for index, image_file in enumerate(additional_images):
+            if image_file:
+                DesignImage.objects.create(design=design, image=image_file, order=index)
+
+    messages.success(request, "Design uploaded successfully.")
+
+    if _is_json_request(request):
+        return JsonResponse(
+            {
+                "status": "ok",
+                "design_id": design.pk,
+                "redirect_url": reverse("designer_designs"),
+            },
+            status=201,
+        )
+
+    return redirect("designer_designs")
+
+
+def _render_design_form_with_errors(
+    request,
+    *,
+    template,
+    form_data,
+    errors,
+    status=400,
+    context_extra=None,
+):
+    if form_data is None:
+        normalized_data = {}
+    elif hasattr(form_data, "dict"):
+        normalized_data = form_data.dict()
+    else:
+        normalized_data = form_data
+
+    context = {
+        "current_section": "designs",
+        "current_year": timezone.now().year,
+        "form_data": normalized_data,
+        "form_errors": errors,
+    }
+    if context_extra:
+        context.update(context_extra)
+
+    if _is_json_request(request):
+        return JsonResponse({"status": "error", "errors": errors}, status=status)
+
+    if errors:
+        messages.error(request, "Please correct the errors below and try again.")
+
+    return render(request, template, context, status=status)
+
 
 @login_required
 def designer_about_me_view(request):
     user = request.user
-    profile, _ = DesignerProfile.objects.get_or_create(user=user)
-
-    # Ensure a subscription record exists (for templates using it)
-    if not hasattr(user, "subscription"):
-        trial_end = timezone.now() + timedelta(days=30)
-        UserSubscription.objects.create(
-            user=user,
-            plan=None,
-            status="free_trial",
-            payment_method=None,
-            trial_end_date=trial_end,
-            next_billing_date=trial_end,
-        )
+    _ensure_designer_bootstrap(user)
+    profile = user.designer_profile
 
     passkeys = list(user.webauthn_credentials.order_by("created_at"))
 
@@ -855,17 +1235,8 @@ def designer_about_me_view(request):
 
 @login_required
 def designer_contact_view(request):
-    profile, _ = DesignerProfile.objects.get_or_create(user=request.user)
-    if not hasattr(request.user, "subscription"):
-        trial_end = timezone.now() + timedelta(days=30)
-        UserSubscription.objects.create(
-            user=request.user,
-            plan=None,
-            status="free_trial",
-            payment_method=None,
-            trial_end_date=trial_end,
-            next_billing_date=trial_end,
-        )
+    _ensure_designer_bootstrap(request.user)
+    profile = request.user.designer_profile
 
     # Count non-empty social links for small stat
     social_links_count = sum(

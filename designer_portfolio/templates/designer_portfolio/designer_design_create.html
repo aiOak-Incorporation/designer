@@ -42,12 +42,16 @@
             id="id_title"
             name="title"
             required
-            class="form-control"
+            class="form-control{% if form_errors.title %} error{% endif %}"
             placeholder="Enter your design title"
+            value="{{ form_data.title|default_if_none:'' }}"
           />
           <small class="form-text"
             >A compelling title that describes your design</small
           >
+          {% if form_errors.title %}
+          <p class="field-error">{{ form_errors.title }}</p>
+          {% endif %}
         </div>
         <div class="form-group">
           <label for="id_slug">URL Slug</label>
@@ -58,6 +62,7 @@
             class="form-control"
             placeholder="auto-generated-from-title"
             readonly
+            value="{{ form_data.slug|default_if_none:'' }}"
           />
           <small class="form-text">Automatically generated from title</small>
         </div>
@@ -71,7 +76,7 @@
           rows="4"
           class="form-control"
           placeholder="Describe your design concept, inspiration, and key features..."
-        ></textarea>
+        >{{ form_data.description|default_if_none:'' }}</textarea>
         <small class="form-text"
           >Help others understand your creative vision</small
         >
@@ -80,15 +85,20 @@
       <div class="form-row">
         <div class="form-group">
           <label for="id_season">Season *</label>
-          <select id="id_season" name="season" required class="form-control">
-            <option value="">Select Season</option>
-            <option value="Spring">Spring</option>
-            <option value="Summer">Summer</option>
-            <option value="Fall">Fall</option>
-            <option value="Winter">Winter</option>
-            <option value="Resort">Resort</option>
-            <option value="Pre-Fall">Pre-Fall</option>
-          </select>
+            {% with selected_season=form_data.season|default:'' %}
+            <select id="id_season" name="season" required class="form-control{% if form_errors.season %} error{% endif %}">
+              <option value="" {% if not selected_season %}selected{% endif %}>Select Season</option>
+              <option value="Spring" {% if selected_season == "Spring" %}selected{% endif %}>Spring</option>
+              <option value="Summer" {% if selected_season == "Summer" %}selected{% endif %}>Summer</option>
+              <option value="Fall" {% if selected_season == "Fall" %}selected{% endif %}>Fall</option>
+              <option value="Winter" {% if selected_season == "Winter" %}selected{% endif %}>Winter</option>
+              <option value="Resort" {% if selected_season == "Resort" %}selected{% endif %}>Resort</option>
+              <option value="Pre-Fall" {% if selected_season == "Pre-Fall" %}selected{% endif %}>Pre-Fall</option>
+            </select>
+            {% endwith %}
+            {% if form_errors.season %}
+            <p class="field-error">{{ form_errors.season }}</p>
+            {% endif %}
         </div>
         <div class="form-group">
           <label for="id_year">Year *</label>
@@ -97,11 +107,14 @@
             id="id_year"
             name="year"
             required
-            class="form-control"
+              class="form-control{% if form_errors.year %} error{% endif %}"
             min="2020"
             max="2030"
-            value="{{ current_year }}"
+              value="{{ form_data.year|default:current_year }}"
           />
+            {% if form_errors.year %}
+            <p class="field-error">{{ form_errors.year }}</p>
+            {% endif %}
         </div>
       </div>
     </div>
@@ -142,6 +155,9 @@
             style="display: none"
             onchange="previewImage(this, 'cover')"
           />
+            {% if form_errors.cover_image %}
+            <p class="field-error">{{ form_errors.cover_image }}</p>
+            {% endif %}
         </div>
       </div>
 
@@ -183,37 +199,37 @@
       <div class="form-row">
         <div class="form-group">
           <label for="id_category">Category</label>
-          <select id="id_category" name="category" class="form-control">
-            <option value="">Select Category</option>
-            <option value="tops">Tops</option>
-            <option value="bottoms">Bottoms</option>
-            <option value="dresses">Dresses</option>
-            <option value="outerwear">Outerwear</option>
-            <option value="accessories">Accessories</option>
-            <option value="footwear">Footwear</option>
-            <option value="swimwear">Swimwear</option>
-            <option value="activewear">Activewear</option>
-            <option value="lingerie">Lingerie</option>
-            <option value="other">Other</option>
+            {% with selected_category=form_data.category|default:'' %}
+            <select id="id_category" name="category" class="form-control">
+              <option value="" {% if not selected_category %}selected{% endif %}>Select Category</option>
+              <option value="tops" {% if selected_category == "tops" %}selected{% endif %}>Tops</option>
+              <option value="bottoms" {% if selected_category == "bottoms" %}selected{% endif %}>Bottoms</option>
+              <option value="dresses" {% if selected_category == "dresses" %}selected{% endif %}>Dresses</option>
+              <option value="outerwear" {% if selected_category == "outerwear" %}selected{% endif %}>Outerwear</option>
+              <option value="accessories" {% if selected_category == "accessories" %}selected{% endif %}>Accessories</option>
+              <option value="footwear" {% if selected_category == "footwear" %}selected{% endif %}>Footwear</option>
+              <option value="swimwear" {% if selected_category == "swimwear" %}selected{% endif %}>Swimwear</option>
+              <option value="activewear" {% if selected_category == "activewear" %}selected{% endif %}>Activewear</option>
+              <option value="lingerie" {% if selected_category == "lingerie" %}selected{% endif %}>Lingerie</option>
+              <option value="other" {% if selected_category == "other" %}selected{% endif %}>Other</option>
           </select>
+            {% endwith %}
         </div>
         <div class="form-group">
           <label for="id_target_market">Target Market</label>
-          <select
-            id="id_target_market"
-            name="target_market"
-            class="form-control"
-          >
-            <option value="">Select Target Market</option>
-            <option value="womens">Women's</option>
-            <option value="mens">Men's</option>
-            <option value="unisex">Unisex</option>
-            <option value="kids">Kids</option>
-            <option value="teen">Teen</option>
-            <option value="plus_size">Plus Size</option>
-            <option value="petite">Petite</option>
-            <option value="maternity">Maternity</option>
+            {% with selected_market=form_data.target_market|default:'' %}
+            <select id="id_target_market" name="target_market" class="form-control">
+              <option value="" {% if not selected_market %}selected{% endif %}>Select Target Market</option>
+              <option value="womens" {% if selected_market == "womens" %}selected{% endif %}>Women's</option>
+              <option value="mens" {% if selected_market == "mens" %}selected{% endif %}>Men's</option>
+              <option value="unisex" {% if selected_market == "unisex" %}selected{% endif %}>Unisex</option>
+              <option value="kids" {% if selected_market == "kids" %}selected{% endif %}>Kids</option>
+              <option value="teen" {% if selected_market == "teen" %}selected{% endif %}>Teen</option>
+              <option value="plus_size" {% if selected_market == "plus_size" %}selected{% endif %}>Plus Size</option>
+              <option value="petite" {% if selected_market == "petite" %}selected{% endif %}>Petite</option>
+              <option value="maternity" {% if selected_market == "maternity" %}selected{% endif %}>Maternity</option>
           </select>
+            {% endwith %}
         </div>
       </div>
 
@@ -226,6 +242,7 @@
             name="fabric_type"
             class="form-control"
             placeholder="e.g., Cotton, Silk, Polyester, Denim"
+              value="{{ form_data.fabric_type|default_if_none:'' }}"
           />
           <small class="form-text">Main fabric used in the design</small>
         </div>
@@ -237,6 +254,7 @@
             name="fabric_weight"
             class="form-control"
             placeholder="e.g., Lightweight, Medium, Heavy"
+              value="{{ form_data.fabric_weight|default_if_none:'' }}"
           />
         </div>
       </div>
@@ -250,6 +268,7 @@
             name="color_palette"
             class="form-control"
             placeholder="e.g., Navy, White, Gold accents"
+              value="{{ form_data.color_palette|default_if_none:'' }}"
           />
           <small class="form-text">Main colors used in the design</small>
         </div>
@@ -263,6 +282,7 @@
             step="0.01"
             min="0"
             placeholder="0.00"
+              value="{{ form_data.target_price|default_if_none:'' }}"
           />
           <small class="form-text">Estimated retail price</small>
         </div>
@@ -276,6 +296,7 @@
           name="size_range"
           class="form-control"
           placeholder="e.g., XS-XL, 0-14, One Size"
+            value="{{ form_data.size_range|default_if_none:'' }}"
         />
         <small class="form-text">Available size options</small>
       </div>
@@ -343,18 +364,21 @@
           rows="4"
           class="form-control"
           placeholder="Additional technical specifications, construction details, special requirements..."
-        ></textarea>
+          >{{ form_data.technical_notes|default_if_none:'' }}</textarea>
         <small class="form-text">Any additional technical information</small>
       </div>
 
       <div class="form-group">
         <label class="checkbox-label">
-          <input
-            type="checkbox"
-            id="id_has_techpack"
-            name="has_techpack"
-            value="true"
-          />
+            {% with has_tech=form_data.has_techpack|default:'' %}
+            <input
+              type="checkbox"
+              id="id_has_techpack"
+              name="has_techpack"
+              value="true"
+              {% if has_tech|lower in 'true,on,1' %}checked{% endif %}
+            />
+            {% endwith %}
           <span class="checkmark"></span>
           <span class="checkbox-text"
             >This design includes a complete tech pack</span
@@ -373,13 +397,16 @@
       <div class="publishing-options">
         <div class="form-group">
           <label class="toggle-label">
-            <input
-              type="checkbox"
-              id="id_published"
-              name="published"
-              value="true"
-              class="toggle-input"
-            />
+              {% with published_value=form_data.published|default:'' %}
+              <input
+                type="checkbox"
+                id="id_published"
+                name="published"
+                value="true"
+                class="toggle-input"
+                {% if published_value|lower in 'true,on,1' %}checked{% endif %}
+              />
+              {% endwith %}
             <span class="toggle-slider"></span>
             <span class="toggle-text">Publish Immediately</span>
           </label>
@@ -390,12 +417,15 @@
 
         <div class="form-group">
           <label class="checkbox-label">
-            <input
-              type="checkbox"
-              id="id_featured"
-              name="featured"
-              value="true"
-            />
+              {% with featured_value=form_data.featured|default:'' %}
+              <input
+                type="checkbox"
+                id="id_featured"
+                name="featured"
+                value="true"
+                {% if featured_value|lower in 'true,on,1' %}checked{% endif %}
+              />
+              {% endwith %}
             <span class="checkmark"></span>
             <span class="checkbox-text">Feature this design</span>
           </label>
@@ -543,21 +573,32 @@
     font-size: 14px;
   }
 
-  .form-control {
-    width: 100%;
-    padding: 12px 15px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    font-size: 16px;
-    transition: border-color 0.3s ease;
-    background: white;
-  }
+.form-control {
+  width: 100%;
+  padding: 12px 15px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 16px;
+  transition: border-color 0.3s ease;
+  background: white;
+}
 
-  .form-control:focus {
-    outline: none;
-    border-color: #280768;
-    box-shadow: 0 0 0 3px rgba(40, 7, 104, 0.1);
-  }
+.form-control:focus {
+  outline: none;
+  border-color: #280768;
+  box-shadow: 0 0 0 3px rgba(40, 7, 104, 0.1);
+}
+
+.form-control.error {
+  border-color: #c0392b;
+  box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.1);
+}
+
+.field-error {
+  margin-top: 6px;
+  color: #c0392b;
+  font-size: 13px;
+}
 
   .form-text {
     display: block;
@@ -1039,14 +1080,37 @@
       });
 
       xhr.addEventListener("load", function () {
-        if (xhr.status === 200) {
+          if (xhr.status >= 200 && xhr.status < 300) {
           progressStatus.textContent = "Upload complete! Redirecting...";
-          // Redirect to design detail or dashboard
-          window.location.href = "/dashboard/designs/";
+            let redirectUrl = "/dashboard/designs/";
+            try {
+              const responseData = JSON.parse(xhr.responseText || "{}");
+              if (responseData.redirect_url) {
+                redirectUrl = responseData.redirect_url;
+              }
+            } catch (error) {
+              // ignore parse issues
+            }
+            window.location.href = redirectUrl;
         } else {
-          progressStatus.textContent = "Upload failed. Please try again.";
+            let errorMessage = "Upload failed. Please try again.";
+            try {
+              const responseData = JSON.parse(xhr.responseText || "{}");
+              if (responseData.errors) {
+                const messages = Object.values(responseData.errors);
+                if (messages.length) {
+                  errorMessage = messages.join("\n");
+                }
+              } else if (responseData.detail) {
+                errorMessage = responseData.detail;
+              }
+            } catch (error) {
+              // ignore parse issues
+            }
+            progressStatus.textContent = errorMessage;
           progressDiv.style.display = "none";
           document.getElementById("designForm").style.display = "block";
+            alert(errorMessage);
         }
       });
 
@@ -1057,8 +1121,9 @@
         document.getElementById("designForm").style.display = "block";
       });
 
-      xhr.open("POST", this.action || window.location.href);
-      xhr.setRequestHeader("X-CSRFToken", formData.get("csrfmiddlewaretoken"));
+        xhr.open("POST", this.action || window.location.href);
+        xhr.setRequestHeader("X-CSRFToken", formData.get("csrfmiddlewaretoken"));
+        xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest");
       xhr.send(formData);
     });
 
@@ -1072,14 +1137,26 @@
       body: formData,
       headers: {
         "X-CSRFToken": formData.get("csrfmiddlewaretoken"),
+          "X-Requested-With": "XMLHttpRequest",
       },
     })
-      .then((response) => {
-        if (response.ok) {
-          alert("Draft saved successfully!");
-        } else {
-          alert("Failed to save draft. Please try again.");
-        }
+        .then(async (response) => {
+          const data = await response.json().catch(() => ({}));
+          if (response.ok) {
+            const message =
+              data.message ||
+              "Draft saved successfully! You can continue editing before publishing.";
+            alert(message);
+          } else {
+            const errors = data?.errors
+              ? Object.values(data.errors)
+              : [];
+            const errorMessage =
+              errors.length > 0
+                ? errors.join("\n")
+                : data?.detail || "Failed to save draft. Please try again.";
+            alert(errorMessage);
+          }
       })
       .catch((error) => {
         alert("Failed to save draft. Please check your connection.");

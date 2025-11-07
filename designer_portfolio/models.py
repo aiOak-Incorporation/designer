@@ -96,11 +96,15 @@ class Design(TimeStampedModel):
     title = models.CharField(max_length=120)
     slug = models.SlugField(max_length=140, unique=True, blank=True)
     designer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='designs')
+    category = models.CharField(max_length=100, blank=True)
+    target_market = models.CharField(max_length=100, blank=True)
     season = models.CharField(max_length=50, blank=True)
     year = models.PositiveIntegerField(default=2025)
     cover_image = models.ImageField(upload_to="designs/covers/", blank=True, null=True)
     description = models.TextField(blank=True)
     published = models.BooleanField(default=True)
+    is_featured = models.BooleanField(default=False)
+    fabric_weight = models.CharField(max_length=100, blank=True)
     
     # Tech pack files
     techpack_pdf = models.FileField(
@@ -143,6 +147,10 @@ class Design(TimeStampedModel):
     
     class Meta:
         ordering = ['-created_at']
+
+    @property
+    def is_public(self) -> bool:
+        return self.published
 
 
 # ---------------- Techpack ----------------
