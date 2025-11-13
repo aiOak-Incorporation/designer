@@ -66,6 +66,7 @@ urlpatterns = [
     # API
     path("api/", include(router.urls)),
     path("api/designers/register/", DesignerRegistrationView.as_view(), name="designer_register_api"),
+    path("api/ai/chat/", views.designer_ai_chat, name="designer_ai_chat"),
 
     # Admin actions
     path("admin/pending-designers/", PendingDesignersView.as_view(), name="pending_designers"),
