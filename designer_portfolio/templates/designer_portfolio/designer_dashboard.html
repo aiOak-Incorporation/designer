@@ -129,11 +129,15 @@
   </div>
 
   <!-- Main Content Grid -->
-  <div
-    class="content-grid"
-    style="display: grid; grid-template-columns: 2fr 1fr; gap: 30px"
-  >
-    <!-- Recent Designs Section -->
+    <div
+      class="content-grid"
+      style="display: grid; grid-template-columns: 2fr 1fr; gap: 30px"
+    >
+      <div
+        class="dashboard-main-column"
+        style="display: flex; flex-direction: column; gap: 30px"
+      >
+        <!-- Recent Designs Section -->
     <div
       class="recent-designs"
       style="
@@ -278,41 +282,153 @@
           >View All Designs →</a
         >
       </div>
-      {% else %}
-      <div style="text-align: center; padding: 40px; color: #666">
-        <i
-          class="fas fa-palette"
-          style="font-size: 48px; margin-bottom: 15px; color: #ddd"
-        ></i>
-        <p style="margin: 0 0 20px 0">
-          No designs yet. Start creating your portfolio!
-        </p>
-        <a
-          href="{% url 'designer_design_create' %}"
-          style="
-            background: #280768;
-            color: white;
-            padding: 12px 24px;
-            text-decoration: none;
-            border-radius: 6px;
-            font-weight: 600;
-          "
-          >Create Your First Design</a
-        >
+        {% else %}
+        <div style="text-align: center; padding: 40px; color: #666">
+          <i
+            class="fas fa-palette"
+            style="font-size: 48px; margin-bottom: 15px; color: #ddd"
+          ></i>
+          <p style="margin: 0 0 20px 0">
+            No designs yet. Start creating your portfolio!
+          </p>
+          <a
+            href="{% url 'designer_design_create' %}"
+            style="
+              background: #280768;
+              color: white;
+              padding: 12px 24px;
+              text-decoration: none;
+              border-radius: 6px;
+              font-weight: 600;
+            "
+            >Create Your First Design</a
+          >
+        </div>
+        {% endif %}
       </div>
-      {% endif %}
-    </div>
 
-    <!-- Quick Actions Sidebar -->
-    <div
-      class="quick-actions"
-      style="
-        background: white;
-        padding: 25px;
-        border-radius: 12px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-      "
-    >
+      <!-- AI Studio Assistant -->
+      <div
+        id="ai-assistant-card"
+        class="ai-assistant-card"
+        data-enabled="{{ ai_chat_enabled|yesno:'true,false' }}"
+        data-chat-url="{% url 'designer_ai_chat' %}"
+        data-max-history="{{ ai_chat_max_history }}"
+      >
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 18px;
+          "
+        >
+          <div>
+            <h2 style="margin: 0; color: #333; font-size: 22px">
+              AI Studio Assistant
+            </h2>
+            <p style="margin: 6px 0 0 0; color: #666; font-size: 14px">
+              Ask questions and get tailored guidance for your portfolio journey.
+            </p>
+          </div>
+          <span
+            class="ai-assistant-status-badge"
+            style="
+              background: rgba(40, 7, 104, 0.12);
+              color: #280768;
+              font-weight: 600;
+              padding: 6px 12px;
+              border-radius: 20px;
+              font-size: 12px;
+              white-space: nowrap;
+            "
+          >
+            {% if ai_chat_enabled %}Online{% else %}Offline{% endif %}
+          </span>
+        </div>
+
+        {% if ai_chat_enabled %}
+        <div
+          class="ai-chat-log"
+          data-empty="{% if ai_chat_history %}false{% else %}true{% endif %}"
+          aria-live="polite"
+          aria-label="Conversation history"
+        >
+          {% if ai_chat_history %}
+            {% for message in ai_chat_history %}
+            <div
+              class="ai-chat-message ai-chat-message--{{ message.role }}"
+              data-role="{{ message.role }}"
+            >
+              <div class="ai-chat-bubble">
+                {{ message.content|linebreaksbr }}
+              </div>
+            </div>
+            {% endfor %}
+          {% else %}
+          <div class="ai-chat-empty">
+            <p style="margin: 0; color: #666; font-size: 14px">
+              Ask about design best practices, launch timelines, or how to showcase your work.
+            </p>
+          </div>
+          {% endif %}
+        </div>
+
+        {% if ai_chat_suggestions %}
+        <div class="ai-chat-suggestions" role="list" aria-label="Quick suggestions">
+          {% for suggestion in ai_chat_suggestions %}
+          <button
+            type="button"
+            class="ai-chat-suggestion"
+            data-suggestion="{{ suggestion }}"
+            role="listitem"
+          >
+            {{ suggestion }}
+          </button>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <form class="ai-chat-form">
+          <label for="ai-chat-input" class="sr-only">Ask the assistant</label>
+          <textarea
+            id="ai-chat-input"
+            class="ai-chat-input"
+            name="message"
+            rows="3"
+            placeholder="Ask about portfolio strategy, launch ideas, or design tips…"
+            required
+          ></textarea>
+          <div class="ai-chat-form-actions">
+            <button type="submit" class="ai-chat-submit">
+              <span>Send</span>
+              <i class="fas fa-paper-plane" aria-hidden="true"></i>
+            </button>
+            <button type="button" class="ai-chat-reset">Reset</button>
+          </div>
+        </form>
+        <div class="ai-chat-status" aria-live="polite"></div>
+        {% else %}
+        <div class="ai-chat-disabled">
+          <p style="margin: 0; color: #666; font-size: 14px">
+            The assistant is currently offline. Please try again later.
+          </p>
+        </div>
+        {% endif %}
+      </div>
+      </div>
+
+      <!-- Quick Actions Sidebar -->
+      <div
+        class="quick-actions"
+        style="
+          background: white;
+          padding: 25px;
+          border-radius: 12px;
+          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        "
+      >
       <h3 style="margin: 0 0 20px 0; color: #333; font-size: 20px">
         Quick Actions
       </h3>
@@ -475,6 +591,166 @@
   .action-buttons a:hover {
     transform: translateX(5px);
   }
+  .ai-assistant-card {
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  }
+  .ai-chat-log {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 18px;
+    max-height: 320px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .ai-chat-message {
+    display: flex;
+  }
+  .ai-chat-message--user {
+    justify-content: flex-end;
+  }
+  .ai-chat-message--assistant {
+    justify-content: flex-start;
+  }
+  .ai-chat-bubble {
+    padding: 12px 16px;
+    border-radius: 16px;
+    max-width: 85%;
+    line-height: 1.45;
+    font-size: 14px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    word-wrap: break-word;
+    white-space: pre-wrap;
+  }
+  .ai-chat-message--user .ai-chat-bubble {
+    background: #280768;
+    color: white;
+    border-bottom-right-radius: 4px;
+  }
+  .ai-chat-message--assistant .ai-chat-bubble {
+    background: white;
+    color: #333;
+    border: 1px solid #e0e0f4;
+    border-bottom-left-radius: 4px;
+  }
+  .ai-chat-empty {
+    text-align: left;
+  }
+  .ai-chat-suggestions {
+    margin-top: 16px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .ai-chat-suggestion {
+    background: rgba(40, 7, 104, 0.08);
+    border: none;
+    color: #280768;
+    border-radius: 20px;
+    padding: 8px 14px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.2s ease;
+  }
+  .ai-chat-suggestion:hover {
+    background: rgba(40, 7, 104, 0.16);
+    transform: translateY(-1px);
+  }
+  .ai-chat-form {
+    margin-top: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .ai-chat-input {
+    width: 100%;
+    border: 1px solid #dcdce6;
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 14px;
+    min-height: 96px;
+    resize: vertical;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .ai-chat-input:focus {
+    outline: none;
+    border-color: #280768;
+    box-shadow: 0 0 0 3px rgba(40, 7, 104, 0.15);
+  }
+  .ai-chat-form-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+  }
+  .ai-chat-submit {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #280768;
+    color: white;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 18px;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .ai-chat-submit:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(40, 7, 104, 0.25);
+  }
+  .ai-chat-submit[disabled] {
+    opacity: 0.6;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+  .ai-chat-reset {
+    background: transparent;
+    border: none;
+    color: #666;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: 6px;
+    transition: color 0.2s ease, background 0.2s ease;
+  }
+  .ai-chat-reset:hover {
+    color: #280768;
+    background: rgba(40, 7, 104, 0.08);
+  }
+  .ai-chat-status {
+    min-height: 18px;
+    font-size: 13px;
+    color: #666;
+  }
+  .ai-chat-status--error {
+    color: #c0392b;
+  }
+  .ai-chat-status--success {
+    color: #27ae60;
+  }
+  .ai-chat-log::-webkit-scrollbar {
+    width: 6px;
+  }
+  .ai-chat-log::-webkit-scrollbar-thumb {
+    background: rgba(40, 7, 104, 0.3);
+    border-radius: 6px;
+  }
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
+  }
   @media (max-width: 768px) {
     .content-grid {
       grid-template-columns: 1fr !important;
@@ -482,6 +758,297 @@
     .stats-grid {
       grid-template-columns: 1fr !important;
     }
+    .ai-chat-log {
+      max-height: 260px;
+    }
+    .ai-chat-form-actions {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 8px;
+    }
+    .ai-chat-submit,
+    .ai-chat-reset {
+      width: 100%;
+      justify-content: center;
+    }
   }
 </style>
+{% endblock %}
+
+{% block scripts %}
+  {{ block.super }}
+  <script>
+    (function () {
+      "use strict";
+
+      const assistantCard = document.getElementById("ai-assistant-card");
+      if (!assistantCard || assistantCard.dataset.enabled !== "true") {
+        return;
+      }
+
+      const endpoint = assistantCard.dataset.chatUrl;
+      if (!endpoint) {
+        return;
+      }
+
+      const maxHistory = parseInt(assistantCard.dataset.maxHistory || "12", 10) || 12;
+      const chatLog = assistantCard.querySelector(".ai-chat-log");
+      const form = assistantCard.querySelector(".ai-chat-form");
+      const textarea = assistantCard.querySelector(".ai-chat-input");
+      const submitButton = assistantCard.querySelector(".ai-chat-submit");
+      const resetButton = assistantCard.querySelector(".ai-chat-reset");
+      const statusEl = assistantCard.querySelector(".ai-chat-status");
+      const suggestionButtons = assistantCard.querySelectorAll(".ai-chat-suggestion");
+      const EMPTY_MESSAGE = "Ask about design best practices, launch timelines, or how to showcase your work.";
+
+      if (!chatLog || !form || !textarea || !submitButton) {
+        return;
+      }
+
+      let conversationHistory = [];
+
+      function getCookie(name) {
+        const cookies = document.cookie ? document.cookie.split(";") : [];
+        for (let i = 0; i < cookies.length; i += 1) {
+          const cookie = cookies[i].trim();
+          if (cookie.startsWith(name + "=")) {
+            return decodeURIComponent(cookie.substring(name.length + 1));
+          }
+        }
+        return "";
+      }
+
+      let statusTimer = null;
+      function setStatus(message, type) {
+        if (!statusEl) return;
+        if (statusTimer) {
+          clearTimeout(statusTimer);
+          statusTimer = null;
+        }
+        statusEl.textContent = message || "";
+        statusEl.classList.remove("ai-chat-status--error", "ai-chat-status--success");
+        if (type === "error") {
+          statusEl.classList.add("ai-chat-status--error");
+        } else if (type === "success") {
+          statusEl.classList.add("ai-chat-status--success");
+        }
+        if (message && type !== "error") {
+          statusTimer = window.setTimeout(function () {
+            statusEl.textContent = "";
+            statusEl.classList.remove("ai-chat-status--error", "ai-chat-status--success");
+            statusTimer = null;
+          }, 4500);
+        }
+      }
+
+      function sanitizeHistory(history) {
+        if (!Array.isArray(history)) {
+          return [];
+        }
+        const sanitized = [];
+        history.forEach(function (item) {
+          if (!item) return;
+          const role = item.role === "assistant" ? "assistant" : item.role === "user" ? "user" : null;
+          const content = (item.content || "").toString().trim();
+          if (!role || !content) return;
+          sanitized.push({ role: role, content: content });
+        });
+        return sanitized.slice(-maxHistory);
+      }
+
+      function createBubble(text) {
+        const bubble = document.createElement("div");
+        bubble.className = "ai-chat-bubble";
+        const segments = text.split(/\r?\n/);
+        segments.forEach(function (segment, index) {
+          if (index > 0) {
+            bubble.appendChild(document.createElement("br"));
+          }
+          bubble.appendChild(document.createTextNode(segment));
+        });
+        return bubble;
+      }
+
+      function renderHistory(history) {
+        const cleanHistory = sanitizeHistory(history);
+        conversationHistory = cleanHistory;
+
+        chatLog.innerHTML = "";
+        if (!cleanHistory.length) {
+          chatLog.setAttribute("data-empty", "true");
+          const emptyWrapper = document.createElement("div");
+          emptyWrapper.className = "ai-chat-empty";
+          const emptyParagraph = document.createElement("p");
+          emptyParagraph.style.margin = "0";
+          emptyParagraph.style.color = "#666";
+          emptyParagraph.style.fontSize = "14px";
+          emptyParagraph.appendChild(document.createTextNode(EMPTY_MESSAGE));
+          emptyWrapper.appendChild(emptyParagraph);
+          chatLog.appendChild(emptyWrapper);
+          return;
+        }
+
+        chatLog.setAttribute("data-empty", "false");
+        cleanHistory.forEach(function (entry) {
+          const wrapper = document.createElement("div");
+          const role = entry.role === "assistant" ? "assistant" : "user";
+          wrapper.className = "ai-chat-message ai-chat-message--" + role;
+          wrapper.setAttribute("data-role", role);
+          wrapper.appendChild(createBubble(entry.content));
+          chatLog.appendChild(wrapper);
+        });
+        chatLog.scrollTop = chatLog.scrollHeight;
+      }
+
+      function readHistoryFromDOM() {
+        const nodes = chatLog.querySelectorAll(".ai-chat-message");
+        const snapshot = [];
+        nodes.forEach(function (node) {
+          const role = node.dataset.role === "user" ? "user" : "assistant";
+          const text = (node.textContent || "").trim();
+          if (!text) return;
+          snapshot.push({ role: role, content: text });
+        });
+        return snapshot;
+      }
+
+      function setBusyState(isBusy) {
+        textarea.disabled = isBusy;
+        submitButton.disabled = isBusy;
+        if (resetButton) {
+          resetButton.disabled = isBusy;
+        }
+        suggestionButtons.forEach(function (button) {
+          button.disabled = isBusy;
+        });
+        if (isBusy) {
+          assistantCard.classList.add("ai-chat--loading");
+        } else {
+          assistantCard.classList.remove("ai-chat--loading");
+        }
+      }
+
+      function parseResponse(response) {
+        return response
+          .json()
+          .catch(function () {
+            return {};
+          })
+          .then(function (data) {
+            if (!response.ok) {
+              const message =
+                (data && (data.message || data.detail)) ||
+                response.statusText ||
+                "Unable to contact the assistant.";
+              const error = new Error(message);
+              error.response = data;
+              throw error;
+            }
+            return data || {};
+          });
+      }
+
+      const csrfToken = getCookie("csrftoken");
+      const initialHistory = readHistoryFromDOM();
+      conversationHistory = sanitizeHistory(initialHistory);
+      if (conversationHistory.length !== initialHistory.length) {
+        renderHistory(conversationHistory);
+      }
+
+      if (suggestionButtons.length) {
+        suggestionButtons.forEach(function (button) {
+          button.addEventListener("click", function () {
+            const suggestion = (button.dataset.suggestion || button.textContent || "").trim();
+            if (!suggestion) return;
+            textarea.value = suggestion;
+            textarea.focus();
+          });
+        });
+      }
+
+      form.addEventListener("submit", function (event) {
+        event.preventDefault();
+        if (form.dataset.sending === "true") {
+          return;
+        }
+
+        const messageValue = textarea.value.trim();
+        if (!messageValue) {
+          return;
+        }
+
+        const previousHistory = conversationHistory.slice();
+        const optimisticHistory = previousHistory.concat([{ role: "user", content: messageValue }]);
+        form.dataset.sending = "true";
+        setBusyState(true);
+        setStatus("Thinking…");
+        renderHistory(optimisticHistory);
+        textarea.value = "";
+
+        fetch(endpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": csrfToken,
+          },
+          credentials: "same-origin",
+          body: JSON.stringify({ message: messageValue }),
+        })
+          .then(parseResponse)
+          .then(function (data) {
+            const history = Array.isArray(data.history)
+              ? data.history
+              : optimisticHistory.concat(
+                  data.reply ? [{ role: "assistant", content: data.reply }] : []
+                );
+            renderHistory(history);
+            setStatus("Assistant replied.", "success");
+          })
+          .catch(function (error) {
+            renderHistory(previousHistory);
+            textarea.value = messageValue;
+            textarea.focus();
+            setStatus(error.message || "The assistant could not respond.", "error");
+          })
+          .finally(function () {
+            form.dataset.sending = "false";
+            setBusyState(false);
+          });
+      });
+
+      if (resetButton) {
+        resetButton.addEventListener("click", function () {
+          if (form.dataset.sending === "true") {
+            return;
+          }
+          form.dataset.sending = "true";
+          setBusyState(true);
+          setStatus("Clearing conversation…");
+
+          fetch(endpoint, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-CSRFToken": csrfToken,
+            },
+            credentials: "same-origin",
+            body: JSON.stringify({ action: "reset" }),
+          })
+            .then(parseResponse)
+            .then(function () {
+              renderHistory([]);
+              textarea.value = "";
+              setStatus("Conversation cleared.", "success");
+            })
+            .catch(function (error) {
+              setStatus(error.message || "Unable to clear the conversation.", "error");
+            })
+            .finally(function () {
+              form.dataset.sending = "false";
+              setBusyState(false);
+            });
+        });
+      }
+    })();
+  </script>
 {% endblock %}

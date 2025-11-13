@@ -34,6 +34,7 @@ uritemplate==4.2.0
 urllib3==2.5.0
 whitenoise==6.11.0
 webauthn==2.0.0
+openai==1.56.0
 
 # Payment processing
 stripe==7.8.0

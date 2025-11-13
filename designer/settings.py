@@ -382,6 +382,15 @@ SOCIAL_AUTH_LOGIN_ERROR_URL = "/accounts/login/"
 SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE = ["email", "profile"]
 
 
+# --- AI Assistant / OpenAI ---
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+OPENAI_CHAT_MODEL = os.getenv("OPENAI_CHAT_MODEL", "gpt-4.1-mini")
+try:
+    OPENAI_CHAT_MAX_HISTORY = int(os.getenv("OPENAI_CHAT_MAX_HISTORY", "12"))
+except (TypeError, ValueError):
+    OPENAI_CHAT_MAX_HISTORY = 12
+
+
 # --- WebAuthn / Passkeys ---
 _derived_rp_id = os.getenv("WEBAUTHN_RP_ID")
 if not _derived_rp_id:

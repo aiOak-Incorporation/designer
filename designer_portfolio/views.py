@@ -19,7 +19,7 @@ from django.core.mail import send_mail
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.core.validators import URLValidator
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
@@ -38,6 +38,7 @@ from .models import (
     Event,
     WebAuthnCredential,
 )
+from .services.openai_chat import ChatServiceError, get_ai_reply
 
 from webauthn import (
     generate_authentication_options,
@@ -87,6 +88,15 @@ def _strtobool(value) -> bool:
     if value is None:
         return False
     return str(value).strip().lower() in {"1", "true", "yes", "on"}
+
+
+AI_CHAT_SESSION_KEY = "designer_ai_chat_history"
+AI_CHAT_SUGGESTIONS = [
+    "How can I present my latest collection to attract buyers?",
+    "What should I include in a compelling design description?",
+    "How do I plan a launch timeline for my upcoming collection?",
+    "Which dashboard metrics should I monitor each week?",
+]
 
 
 def _save_design_from_request(request, *, design=None):
@@ -400,6 +410,18 @@ class DesignerDashboardView(LoginRequiredMixin, TemplateView):
         except Exception as e:
             recent_collections = []
 
+        try:
+            ai_chat_history = self.request.session.get(AI_CHAT_SESSION_KEY, [])
+            if not isinstance(ai_chat_history, list):
+                ai_chat_history = []
+        except Exception:
+            ai_chat_history = []
+
+        max_history = getattr(settings, "OPENAI_CHAT_MAX_HISTORY", 12)
+        if not isinstance(max_history, int) or max_history <= 0:
+            max_history = 12
+        ai_chat_history = ai_chat_history[-max_history:]
+
         context.update(
             {
                 "current_section": "dashboard",
@@ -409,6 +431,10 @@ class DesignerDashboardView(LoginRequiredMixin, TemplateView):
                 "user_designs": recent_designs,
                 "recent_designs": recent_designs,
                 "recent_collections": recent_collections,
+                "ai_chat_enabled": bool(getattr(settings, "OPENAI_API_KEY", "")),
+                "ai_chat_history": ai_chat_history,
+                "ai_chat_suggestions": AI_CHAT_SUGGESTIONS,
+                "ai_chat_max_history": max_history,
             }
         )
 
@@ -954,6 +980,95 @@ def designer_design_detail_api(request, design_id):
     ]
 
     return JsonResponse({"success": True, "design": data})
+
+
+@login_required
+@require_POST
+def designer_ai_chat(request):
+    api_key_configured = bool(getattr(settings, "OPENAI_API_KEY", ""))
+    if not api_key_configured:
+        return JsonResponse(
+            {
+                "error": "assistant_unavailable",
+                "message": "The AI assistant is not currently available.",
+            },
+            status=503,
+        )
+
+    if request.content_type == "application/json":
+        try:
+            payload = json.loads(request.body.decode("utf-8")) if request.body else {}
+        except (TypeError, ValueError):
+            return JsonResponse(
+                {"error": "invalid_payload", "message": "Unable to decode the request body."},
+                status=400,
+            )
+    else:
+        payload = request.POST
+
+    action = (payload.get("action") or "").strip().lower()
+    if action == "reset":
+        request.session.pop(AI_CHAT_SESSION_KEY, None)
+        request.session.modified = True
+        return JsonResponse({"status": "ok", "history": []})
+
+    user_message = (payload.get("message") or payload.get("question") or "").strip()
+    if not user_message:
+        return JsonResponse(
+            {"error": "missing_message", "message": "Please provide a question for the assistant."},
+            status=400,
+        )
+
+    history = request.session.get(AI_CHAT_SESSION_KEY, [])
+    if not isinstance(history, list):
+        history = []
+
+    max_history = getattr(settings, "OPENAI_CHAT_MAX_HISTORY", 12)
+    if not isinstance(max_history, int) or max_history <= 0:
+        max_history = 12
+
+    history = history[-max_history:] + [{"role": "user", "content": user_message}]
+
+    try:
+        reply_text, usage = get_ai_reply(history)
+    except ImproperlyConfigured:
+        return JsonResponse(
+            {
+                "error": "assistant_unavailable",
+                "message": "The AI assistant is not currently available.",
+            },
+            status=503,
+        )
+    except ChatServiceError as exc:
+        return JsonResponse(
+            {
+                "error": "assistant_failure",
+                "message": str(exc),
+            },
+            status=502,
+        )
+    except Exception as exc:  # noqa: BLE001
+        return JsonResponse(
+            {
+                "error": "unexpected_error",
+                "message": "Something went wrong while contacting the assistant.",
+            },
+            status=500,
+        )
+
+    history.append({"role": "assistant", "content": reply_text})
+    request.session[AI_CHAT_SESSION_KEY] = history[-max_history:]
+    request.session.modified = True
+
+    response_payload = {
+        "reply": reply_text,
+        "history": request.session[AI_CHAT_SESSION_KEY],
+    }
+    if usage:
+        response_payload["usage"] = usage
+
+    return JsonResponse(response_payload)
+
 
 def subscription_dashboard(request):
     return render(request, "designer_portfolio/subscription_dashboard.html", {})
