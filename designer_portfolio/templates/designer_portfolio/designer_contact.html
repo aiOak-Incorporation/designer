@@ -51,6 +51,15 @@
       </div>
     </div>
 
+      <div class="messenger-callout">
+        <div class="callout-icon">💬</div>
+        <div class="callout-content">
+          <h3>Use the Dedicated Designer Messenger</h3>
+          <p>All professional conversations are routed through the in-platform messenger to keep designers protected and organized.</p>
+          <a href="{{ messenger_url }}" class="btn btn-primary callout-button">Open Messenger</a>
+        </div>
+      </div>
+
     <!-- Contact Form -->
     <form method="post" class="contact-form">
       {% csrf_token %}
@@ -338,6 +347,49 @@
   border-radius: 12px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   margin-bottom: 30px;
+}
+
+.messenger-callout {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 24px;
+  border-radius: 16px;
+  border: 1px solid rgba(40, 7, 104, 0.12);
+  background: linear-gradient(135deg, rgba(40, 7, 104, 0.08), rgba(61, 10, 133, 0.08));
+  margin-bottom: 30px;
+}
+
+.callout-icon {
+  font-size: 40px;
+  background: #280768;
+  color: #ffffff;
+  width: 60px;
+  height: 60px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.callout-content h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #1a1c1e;
+  font-weight: 700;
+}
+
+.callout-content p {
+  margin: 8px 0 16px;
+  color: #475467;
+  font-size: 0.95rem;
+}
+
+.callout-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .contact-header {

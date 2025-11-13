@@ -16,7 +16,7 @@ from .views import (
     AboutView, AboutSiteView,
     DesignerDashboardView, designer_designs_view, designer_design_create_view, 
     designer_design_edit_view, designer_design_delete_view, designer_design_detail_api,
-    designer_about_me_view, designer_contact_view,
+    designer_about_me_view, designer_contact_view, designer_messenger_view,
     DesignerRegistrationView,
     DesignersListView,
 )
@@ -57,6 +57,7 @@ urlpatterns = [
     path("dashboard/designs/<int:design_id>/details/", designer_design_detail_api, name="designer_design_detail_api"),
     path("dashboard/about-me/", designer_about_me_view, name="designer_about_me"),
     path("dashboard/contact/", designer_contact_view, name="designer_contact"),
+    path("dashboard/messenger/", designer_messenger_view, name="designer_messenger"),
     # Common misspellings/legacy links -> redirect to dashboard
     path("dashephard/", RedirectView.as_view(pattern_name="designer_dashboard", permanent=False), name="dashephard"),
     path("dashepard/", RedirectView.as_view(pattern_name="designer_dashboard", permanent=False), name="dashepard"),

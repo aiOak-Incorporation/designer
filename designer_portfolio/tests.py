@@ -3,7 +3,7 @@ from django.urls import reverse
 from django.contrib.auth.models import User
 from django.core import mail
 
-from .models import DesignerProfile, UserSubscription
+from .models import DesignerProfile, UserSubscription, DesignerConversation, DesignerMessage
 
 
 TEST_STORAGE_BACKENDS = {
@@ -163,3 +163,94 @@ class PasswordResetFlowTests(TestCase):
             any(fallback_email in (message.to or []) for message in mail.outbox),
             "Expected the reset email to use the profile contact address when user.email is empty",
         )
+
+
+@override_settings(
+    SECURE_SSL_REDIRECT=False,
+    SESSION_COOKIE_SECURE=False,
+    CSRF_COOKIE_SECURE=False,
+    STORAGES=TEST_STORAGE_BACKENDS,
+)
+class MessengerViewTests(TestCase):
+    def setUp(self) -> None:
+        self.password = "StrongPass123!"
+        self.sender = User.objects.create_user(
+            username="primary-designer",
+            email="primary@example.com",
+            password=self.password,
+            is_active=True,
+        )
+        self.recipient = User.objects.create_user(
+            username="secondary-designer",
+            email="secondary@example.com",
+            password=self.password,
+            is_active=True,
+        )
+        DesignerProfile.objects.create(user=self.sender)
+        DesignerProfile.objects.create(user=self.recipient)
+
+    def test_login_required_for_messenger(self):
+        response = self.client.get(reverse("designer_messenger"))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse("login"), response.url)
+
+    def test_non_designer_redirected_from_messenger(self):
+        outsider = User.objects.create_user(
+            username="outsider",
+            email="outsider@example.com",
+            password=self.password,
+            is_active=True,
+        )
+        self.client.login(username="outsider", password=self.password)
+
+        # Emulate a legacy account that has not been provisioned as a designer
+        DesignerProfile.objects.filter(user=outsider).delete()
+
+        response = self.client.get(reverse("designer_messenger"))
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse("designer_dashboard"))
+
+    def test_get_with_parameter_bootstraps_conversation(self):
+        self.client.login(username=self.sender.username, password=self.password)
+        self.assertEqual(DesignerConversation.objects.count(), 0)
+
+        response = self.client.get(f"{reverse('designer_messenger')}?with={self.recipient.username}")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(DesignerConversation.objects.count(), 1)
+
+    def test_post_creates_message_and_conversation(self):
+        self.client.login(username=self.sender.username, password=self.password)
+        post_data = {
+            "recipient": str(self.recipient.pk),
+            "message": "Hello from the dedicated messenger.",
+        }
+
+        response = self.client.post(reverse("designer_messenger"), post_data)
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(response.url.startswith(reverse("designer_messenger")))
+
+        conversation = DesignerConversation.objects.get(
+            participant_a_id=min(self.sender.pk, self.recipient.pk),
+            participant_b_id=max(self.sender.pk, self.recipient.pk),
+        )
+        self.assertEqual(conversation.messages.count(), 1)
+
+        message = conversation.messages.first()
+        self.assertEqual(message.content, post_data["message"])
+        self.assertEqual(message.sender, self.sender)
+
+    def test_thread_marks_partner_messages_as_read(self):
+        conversation = DesignerConversation.get_or_create_between(self.sender, self.recipient)[0]
+        DesignerMessage.objects.create(
+            conversation=conversation,
+            sender=self.recipient,
+            content="Incoming message that should be marked read.",
+        )
+
+        self.client.login(username=self.sender.username, password=self.password)
+        response = self.client.get(f"{reverse('designer_messenger')}?conversation={conversation.pk}")
+        self.assertEqual(response.status_code, 200)
+
+        message = conversation.messages.first()
+        message.refresh_from_db()
+        self.assertIsNotNone(message.read_at)

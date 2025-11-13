@@ -64,6 +64,15 @@
             <span>About Me</span>
           </a>
         </li>
+          <li class="nav-item">
+            <a
+              href="{% url 'designer_messenger' %}"
+              class="nav-link {% if current_section == 'messenger' %}active{% endif %}"
+            >
+              <i class="icon">💬</i>
+              <span>Messenger</span>
+            </a>
+          </li>
         <li class="nav-item">
           <a
             href="{% url 'designer_contact' %}"
@@ -100,9 +109,10 @@
         <h1 class="page-title">
           {% block dashboard_title %} {% if current_section == 'designs' %}My
           Designs {% elif current_section == 'about' %}About Me {% elif
-          current_section == 'contact' %}Contact Information {% elif
-          current_section == 'subscription' %}Subscription {% else %}Dashboard
-          {% endif %} {% endblock %}
+            current_section == 'messenger' %}Messenger {% elif current_section ==
+            'contact' %}Contact Information {% elif current_section ==
+            'subscription' %}Subscription {% else %}Dashboard {% endif %}
+            {% endblock %}
         </h1>
 
         <div class="header-actions">

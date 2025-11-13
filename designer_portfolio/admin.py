@@ -125,3 +125,37 @@ class DesignerProfileAdmin(admin.ModelAdmin):
         "created_at",
         "updated_at",
     )
+
+
+@admin.register(m.DesignerConversation)
+class DesignerConversationAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "participant_a",
+        "participant_b",
+        "created_at",
+        "updated_at",
+        "message_count",
+    )
+    search_fields = (
+        "participant_a__username",
+        "participant_a__email",
+        "participant_b__username",
+        "participant_b__email",
+    )
+    readonly_fields = ("created_at", "updated_at")
+
+    def message_count(self, obj):
+        return obj.messages.count()
+
+
+@admin.register(m.DesignerMessage)
+class DesignerMessageAdmin(admin.ModelAdmin):
+    list_display = ("id", "conversation", "sender", "short_content", "created_at", "read_at")
+    list_filter = ("created_at", "read_at")
+    search_fields = ("content", "sender__username", "sender__email")
+    readonly_fields = ("created_at", "updated_at")
+
+    def short_content(self, obj):
+        return obj.content[:75] + ("..." if len(obj.content) > 75 else "")
+    short_content.short_description = "Content"

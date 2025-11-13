@@ -12,7 +12,7 @@ from django.views.generic import TemplateView, DetailView, ListView
 from django.contrib.auth.views import LoginView, PasswordResetView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth import login, authenticate, get_user_model
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponseBadRequest, HttpResponseForbidden
 from django.views.decorators.csrf import requires_csrf_token
 from django.views.decorators.http import require_POST
 from django.core.mail import send_mail
@@ -30,6 +30,8 @@ from .forms import DesignerSignUpForm, DesignerLoginForm, DesignerPasswordResetF
 from .auth_utils import ensure_designer_access
 from .models import (
     DesignerProfile,
+    DesignerConversation,
+    DesignerMessage,
     SubscriptionPlan,
     UserSubscription,
     Design,
@@ -87,6 +89,15 @@ def _strtobool(value) -> bool:
     if value is None:
         return False
     return str(value).strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _user_has_designer_profile(user) -> bool:
+    if not user or not getattr(user, "is_authenticated", False):
+        return False
+    try:
+        return bool(user.designer_profile)
+    except DesignerProfile.DoesNotExist:
+        return False
 
 
 def _save_design_from_request(request, *, design=None):
@@ -1186,6 +1197,116 @@ def designer_contact_view(request):
             "current_section": "contact",
             "designer_profile": profile,
             "social_links_count": social_links_count,
+            "messenger_url": reverse("designer_messenger"),
+        },
+    )
+
+
+@login_required
+def designer_messenger_view(request):
+    user = request.user
+    if not _user_has_designer_profile(user):
+        messages.error(request, "Messaging is available only to registered designers.")
+        return redirect("designer_dashboard")
+
+    designer_users = (
+        User.objects.filter(designer_profile__isnull=False, is_active=True)
+        .exclude(pk=user.pk)
+        .select_related("designer_profile")
+        .order_by("username")
+    )
+
+    conversation_qs = (
+        DesignerConversation.objects.filter(Q(participant_a=user) | Q(participant_b=user))
+        .select_related("participant_a", "participant_b")
+        .prefetch_related("messages__sender")
+        .order_by("-updated_at")
+    )
+
+    selected_conversation = None
+    selected_partner = None
+
+    conversation_param = request.GET.get("conversation")
+    with_param = request.GET.get("with")
+
+    if conversation_param:
+        selected_conversation = get_object_or_404(conversation_qs, pk=conversation_param)
+        selected_partner = selected_conversation.other_participant(user)
+    elif with_param:
+        target_filter = Q(username__iexact=with_param)
+        if str(with_param).isdigit():
+            target_filter |= Q(pk=int(with_param))
+        selected_partner = get_object_or_404(
+            designer_users,
+            target_filter,
+        )
+        selected_conversation, _ = DesignerConversation.get_or_create_between(user, selected_partner)
+    elif conversation_qs.exists():
+        selected_conversation = conversation_qs.first()
+        selected_partner = selected_conversation.other_participant(user)
+
+    if request.method == "POST":
+        conversation_id = request.POST.get("conversation_id")
+        recipient_id = request.POST.get("recipient_id") or request.POST.get("recipient")
+        message_body = (request.POST.get("message") or "").strip()
+
+        if not message_body:
+            messages.error(request, "Message cannot be empty.")
+            return redirect(request.path + (f"?conversation={conversation_id}" if conversation_id else ""))
+
+        try:
+            if conversation_id:
+                conversation = get_object_or_404(conversation_qs, pk=conversation_id)
+                selected_partner = conversation.other_participant(user)
+            else:
+                if not recipient_id:
+                    messages.error(request, "Please choose a designer to message.")
+                    return redirect(request.path)
+                try:
+                    recipient = designer_users.get(pk=recipient_id)
+                except (ValueError, User.DoesNotExist):
+                    messages.error(request, "The selected designer is not available for messaging.")
+                    return redirect(request.path)
+                conversation, _ = DesignerConversation.get_or_create_between(user, recipient)
+                selected_partner = recipient
+
+            DesignerMessage.objects.create(
+                conversation=conversation,
+                sender=user,
+                content=message_body,
+            )
+            messages.success(request, "Message sent.")
+            return redirect(f"{reverse('designer_messenger')}?conversation={conversation.pk}")
+        except ValidationError as exc:
+            messages.error(request, exc.message)
+            return redirect(request.path)
+
+    messages_for_thread = []
+    if selected_conversation:
+        messages_for_thread = list(selected_conversation.messages.order_by("created_at"))
+        for message_obj in messages_for_thread:
+            if message_obj.sender_id != user.pk and message_obj.read_at is None:
+                message_obj.read_at = timezone.now()
+                message_obj.save(update_fields=["read_at"])
+
+    conversation_list = list(conversation_qs)
+    for conversation in conversation_list:
+        try:
+            conversation.partner_for_user = conversation.other_participant(user)
+        except ValueError:
+            conversation.partner_for_user = None
+
+    return render(
+        request,
+        "designer_portfolio/designer_messenger.html",
+        {
+            "current_section": "messenger",
+            "conversations": conversation_list,
+            "selected_conversation": selected_conversation,
+            "selected_partner": selected_partner,
+            "messages_for_thread": messages_for_thread,
+            "available_designers": designer_users,
+            "active_conversation_id": selected_conversation.pk if selected_conversation else None,
         },
     )
 
@@ -1205,6 +1326,13 @@ class DesignersListView(ListView):
         return DesignerProfile.objects.filter(
             user__is_active=True
         ).select_related('user').order_by('-created_at')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        can_message = _user_has_designer_profile(self.request.user)
+        context["can_message_via_messenger"] = can_message
+        context["messenger_url"] = reverse("designer_messenger") if can_message else ""
+        return context
 
 
 class DesignerLoginView(LoginView):

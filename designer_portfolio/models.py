@@ -1,6 +1,8 @@
-from django.db import models
-from django.utils.text import slugify
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
+from django.db import models
+from django.utils import timezone
+from django.utils.text import slugify
 
 
 # ---------------- Base Timestamp ----------------
@@ -289,6 +291,108 @@ class DesignerProfile(models.Model):
     class Meta:
         verbose_name = "Designer Profile"
         verbose_name_plural = "Designer Profiles"
+
+
+class DesignerConversation(TimeStampedModel):
+    participant_a = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="designer_conversations_as_a",
+    )
+    participant_b = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="designer_conversations_as_b",
+    )
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                check=~models.Q(participant_a=models.F("participant_b")),
+                name="designer_conversation_participants_distinct",
+            ),
+            models.UniqueConstraint(
+                fields=["participant_a", "participant_b"],
+                name="designer_conversation_unique_pair",
+            ),
+        ]
+        ordering = ["-updated_at"]
+
+    def save(self, *args, **kwargs):
+        if self.participant_a_id and self.participant_b_id:
+            if self.participant_a_id == self.participant_b_id:
+                raise ValidationError("Conversation participants must be different users.")
+            if self.participant_a_id > self.participant_b_id:
+                self.participant_a_id, self.participant_b_id = (
+                    self.participant_b_id,
+                    self.participant_a_id,
+                )
+        super().save(*args, **kwargs)
+
+    def clean(self):
+        super().clean()
+        if self.participant_a_id == self.participant_b_id:
+            raise ValidationError("Conversation participants must be different users.")
+
+    @property
+    def participants(self):
+        return (self.participant_a, self.participant_b)
+
+    def other_participant(self, user):
+        if user.pk == self.participant_a_id:
+            return self.participant_b
+        if user.pk == self.participant_b_id:
+            return self.participant_a
+        raise ValueError("User is not part of this conversation.")
+
+    @classmethod
+    def get_or_create_between(cls, user_a, user_b):
+        if user_a.pk == user_b.pk:
+            raise ValidationError("You cannot start a conversation with yourself.")
+        first, second = sorted([user_a, user_b], key=lambda user: user.pk)
+        conversation, created = cls.objects.get_or_create(
+            participant_a=first,
+            participant_b=second,
+        )
+        return conversation, created
+
+
+class DesignerMessage(TimeStampedModel):
+    conversation = models.ForeignKey(
+        DesignerConversation,
+        on_delete=models.CASCADE,
+        related_name="messages",
+    )
+    sender = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="designer_messages_sent",
+    )
+    content = models.TextField()
+    read_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["created_at"]
+
+    def clean(self):
+        super().clean()
+        if self.sender_id not in (self.conversation.participant_a_id, self.conversation.participant_b_id):
+            raise ValidationError("Sender must be part of the conversation.")
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+        DesignerConversation.objects.filter(pk=self.conversation_id).update(updated_at=timezone.now())
+
+    def mark_read(self, user):
+        if user.pk not in (self.conversation.participant_a_id, self.conversation.participant_b_id):
+            raise ValidationError("Only conversation participants can mark messages as read.")
+        if user.pk == self.sender_id:
+            return
+        if self.read_at:
+            return
+        self.read_at = timezone.now()
+        super().save(update_fields=["read_at"])
 
 
 # ---------------- Subscription Models ----------------

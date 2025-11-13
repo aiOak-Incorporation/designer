@@ -4,18 +4,19 @@
 {% block content %}
 <div class="designers-hero">
   <div class="hero-content">
-    <h1 class="hero-title">
-      <span class="hero-accent">Meet Our</span>
-      <span class="hero-main">Talented Designers</span>
-    </h1>
-      <p class="hero-subtitle">
-        Discover the creative minds shaping the future of fashion. Connect with
-        innovative designers who bring unique perspectives and exceptional
-        craftsmanship to the industry.
-      </p>
-      <p class="hero-note">
-        Note: New designer portfolio websites stay restricted to approved viewers until the designer chooses to share them publicly.
-      </p>
+      <h1 class="hero-title">
+        <span class="hero-accent">Meet Our</span>
+        <span class="hero-main">Talented Designers</span>
+      </h1>
+        <p class="hero-subtitle">
+          Discover the creative minds shaping the future of fashion. Connect with
+          innovative designers who bring unique perspectives and exceptional
+          craftsmanship to the industry.
+        </p>
+        <p class="hero-note">
+          Note: New designer portfolio websites stay restricted to approved viewers until the designer chooses to share them publicly.
+          All professional communication happens inside the dedicated Designer Messenger for registered designers.
+        </p>
   </div>
 
   <div class="hero-stats">
@@ -72,13 +73,17 @@
           </div>
           {% endif %}
 
-          <div class="card-overlay">
-            <div class="quick-actions">
-              {% if designer.contact_email %}
-              <a href="mailto:{{ designer.contact_email }}" class="action-btn" title="Send Email">
-                <i class="fas fa-envelope"></i>
-              </a>
-              {% endif %}
+            <div class="card-overlay">
+              <div class="quick-actions">
+                {% if can_message_via_messenger %}
+                <a href="{{ messenger_url }}?with={{ designer.user.username }}" class="action-btn" title="Message via Designer Messenger">
+                  <i class="fas fa-comments"></i>
+                </a>
+                {% else %}
+                <a href="{% url 'signup' %}" class="action-btn" title="Join to message this designer">
+                  <i class="fas fa-user-plus"></i>
+                </a>
+                {% endif %}
               {% if designer.portfolio_website %}
               <a href="{{ designer.portfolio_website }}" target="_blank" rel="noopener" class="action-btn" title="View Portfolio">
                 <i class="fas fa-external-link-alt"></i>
@@ -149,12 +154,16 @@
             {% endif %}
           </div>
 
-          <div class="card-actions">
-            {% if designer.contact_email %}
-            <a href="mailto:{{ designer.contact_email }}" class="btn btn-primary">
-              <i class="fas fa-paper-plane"></i> Get In Touch
-            </a>
-            {% endif %}
+            <div class="card-actions">
+              {% if can_message_via_messenger %}
+              <a href="{{ messenger_url }}?with={{ designer.user.username }}" class="btn btn-primary">
+                <i class="fas fa-comments"></i> Message Designer
+              </a>
+              {% else %}
+              <a href="{% url 'signup' %}" class="btn btn-primary">
+                <i class="fas fa-user-plus"></i> Join to Message
+              </a>
+              {% endif %}
             <button class="btn btn-secondary" onclick="toggleFavorite(this)">
               <i class="far fa-heart"></i> Follow
             </button>
