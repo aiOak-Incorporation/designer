@@ -1,0 +1,392 @@
+{% extends "designer_portfolio/dashboard_base.html" %}
+
+{% block dashboard_title %}Messenger{% endblock %}
+
+{% block dashboard_content %}
+<div class="messenger-wrapper">
+  <aside class="messenger-sidebar">
+    <div class="sidebar-header">
+      <h2>Conversations</h2>
+      <form method="get" class="new-thread-form">
+        <label for="start-conversation">Start new chat</label>
+        <div class="new-thread-row">
+          <select id="start-conversation" name="with">
+            <option value="">Select a designer</option>
+            {% for designer_user in available_designers %}
+              <option value="{{ designer_user.username }}">
+                {{ designer_user.get_full_name|default:designer_user.username }}
+              </option>
+            {% empty %}
+              <option value="">No other designers available</option>
+            {% endfor %}
+          </select>
+          <button type="submit" class="btn btn-small" {% if not available_designers %}disabled{% endif %}>
+            Open
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <ul class="conversation-list">
+      {% for conversation in conversations %}
+        {% with partner=conversation.partner_for_user %}
+        <li class="conversation-item{% if active_conversation_id and conversation.pk == active_conversation_id %} active{% endif %}">
+          {% if partner %}
+          <a href="?conversation={{ conversation.pk }}">
+            <div class="conversation-title">
+              <span class="partner-name">
+                {{ partner.get_full_name|default:partner.username }}
+              </span>
+              <span class="conversation-date">
+                {{ conversation.updated_at|date:"M d, Y" }}
+              </span>
+            </div>
+            {% with last_message=conversation.messages.last %}
+              <p class="conversation-preview">
+                {% if last_message %}
+                  {% if last_message.sender_id == user.id %}
+                    You:
+                  {% endif %}
+                  {{ last_message.content|truncatechars:80 }}
+                {% else %}
+                  No messages yet
+                {% endif %}
+              </p>
+            {% endwith %}
+          </a>
+          {% else %}
+          <div class="conversation-title">
+            <span class="partner-name">Unavailable conversation</span>
+          </div>
+          {% endif %}
+        </li>
+        {% endwith %}
+      {% empty %}
+        <li class="empty-state">
+          <p>No conversations yet. Start a new chat to begin messaging.</p>
+        </li>
+      {% endfor %}
+    </ul>
+  </aside>
+
+  <section class="messenger-main">
+    {% if selected_conversation %}
+      <div class="conversation-header">
+        <div>
+          <h2>{{ selected_partner.get_full_name|default:selected_partner.username }}</h2>
+          <p class="conversation-subtitle">
+            Messaging is restricted to registered designers. Keep conversations professional and on-topic.
+          </p>
+        </div>
+      </div>
+
+      <div class="messages-container" id="messagesContainer">
+        {% for message in messages_for_thread %}
+          <div class="message-bubble{% if message.sender_id == user.id %} from-self{% else %} from-partner{% endif %}">
+            <div class="message-meta">
+              <span class="message-sender">
+                {% if message.sender_id == user.id %}
+                  You
+                {% else %}
+                  {{ selected_partner.get_full_name|default:selected_partner.username }}
+                {% endif %}
+              </span>
+              <span class="message-time">{{ message.created_at|date:"M d, Y g:i a" }}</span>
+            </div>
+            <p class="message-body">{{ message.content|linebreaksbr }}</p>
+          </div>
+        {% empty %}
+          <div class="empty-thread">
+            <p>No messages yet. Send the first message to get started.</p>
+          </div>
+        {% endfor %}
+      </div>
+
+      <form method="post" class="message-form">
+        {% csrf_token %}
+        <input type="hidden" name="conversation_id" value="{{ selected_conversation.pk }}">
+        <label for="message-body" class="sr-only">Message</label>
+        <textarea
+          id="message-body"
+          name="message"
+          rows="3"
+          placeholder="Type your message here..."
+          required
+        ></textarea>
+        <button type="submit" class="btn btn-primary">Send Message</button>
+      </form>
+    {% else %}
+      <div class="no-conversation-selected">
+        <h2>Select a conversation</h2>
+        <p>Choose an existing chat or start a new one from the sidebar.</p>
+      </div>
+    {% endif %}
+  </section>
+</div>
+
+<style>
+.messenger-wrapper {
+  display: grid;
+  grid-template-columns: minmax(260px, 320px) 1fr;
+  gap: 24px;
+  min-height: 600px;
+}
+
+.messenger-sidebar {
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 12px 40px rgba(18, 38, 63, 0.08);
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-header {
+  padding: 24px;
+  border-bottom: 1px solid #f0f2f5;
+}
+
+.sidebar-header h2 {
+  margin: 0 0 16px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1a1c1e;
+}
+
+.new-thread-form label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #475467;
+  margin-bottom: 8px;
+}
+
+.new-thread-row {
+  display: flex;
+  gap: 8px;
+}
+
+.new-thread-row select {
+  flex: 1;
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 0.9rem;
+  color: #1a1c1e;
+  background: #f9fafb;
+}
+
+.btn-small {
+  padding: 8px 14px;
+  font-size: 0.85rem;
+  border-radius: 8px;
+  background: #280768;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-small:disabled {
+  background: #cbd5e1;
+  cursor: not-allowed;
+}
+
+.conversation-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.conversation-item a {
+  display: block;
+  padding: 16px 24px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.conversation-item {
+  border-bottom: 1px solid #f0f2f5;
+}
+
+.conversation-item:last-child {
+  border-bottom: none;
+}
+
+.conversation-item.active {
+  background: #f3f0ff;
+}
+
+.conversation-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.partner-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #1a1c1e;
+}
+
+.conversation-date {
+  font-size: 0.8rem;
+  color: #98a2b3;
+}
+
+.conversation-preview {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #475467;
+}
+
+.empty-state {
+  padding: 24px;
+  text-align: center;
+  color: #667085;
+  font-size: 0.9rem;
+}
+
+.messenger-main {
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 12px 40px rgba(18, 38, 63, 0.08);
+  display: flex;
+  flex-direction: column;
+}
+
+.conversation-header {
+  padding: 24px;
+  border-bottom: 1px solid #f0f2f5;
+}
+
+.conversation-header h2 {
+  margin: 0;
+  font-size: 1.3rem;
+  color: #1a1c1e;
+  font-weight: 700;
+}
+
+.conversation-subtitle {
+  margin: 8px 0 0;
+  color: #667085;
+  font-size: 0.9rem;
+}
+
+.messages-container {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+  background: linear-gradient(180deg, #f6f7fb 0%, #ffffff 100%);
+}
+
+.message-bubble {
+  max-width: 520px;
+  padding: 14px 18px;
+  border-radius: 18px;
+  margin-bottom: 16px;
+  position: relative;
+  box-shadow: 0 4px 14px rgba(18, 38, 63, 0.08);
+}
+
+.message-bubble.from-self {
+  margin-left: auto;
+  background: linear-gradient(135deg, #280768 0%, #3d0a85 100%);
+  color: #ffffff;
+}
+
+.message-bubble.from-partner {
+  background: #ffffff;
+  color: #1a1c1e;
+}
+
+.message-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  margin-bottom: 8px;
+}
+
+.message-meta .message-sender {
+  font-weight: 600;
+}
+
+.message-meta .message-time {
+  color: inherit;
+  opacity: 0.7;
+}
+
+.message-body {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.empty-thread {
+  text-align: center;
+  color: #667085;
+  font-size: 0.95rem;
+}
+
+.message-form {
+  border-top: 1px solid #f0f2f5;
+  padding: 20px 24px;
+  display: grid;
+  gap: 12px;
+}
+
+.message-form textarea {
+  border: 1px solid #d0d5dd;
+  border-radius: 12px;
+  padding: 12px;
+  font-size: 0.95rem;
+  resize: vertical;
+  min-height: 120px;
+}
+
+.message-form button {
+  justify-self: end;
+}
+
+.no-conversation-selected {
+  padding: 60px;
+  text-align: center;
+  color: #667085;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+@media (max-width: 1024px) {
+  .messenger-wrapper {
+    grid-template-columns: 1fr;
+  }
+
+  .messenger-sidebar {
+    order: 2;
+  }
+
+  .messenger-main {
+    order: 1;
+  }
+}
+</style>
+
+<script>
+  (function() {
+    var container = document.getElementById("messagesContainer");
+    if (container) {
+      container.scrollTop = container.scrollHeight;
+    }
+  })();
+</script>
+{% endblock %}
