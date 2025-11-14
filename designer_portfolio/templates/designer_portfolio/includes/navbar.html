@@ -18,22 +18,23 @@
       <span></span>
     </button>
 
-    <!-- Navigation -->
-    <nav class="nav">
-      <a href="{% url 'designers_list' %}">Designers</a>
-      <a href="{% url 'event_list' %}">Events</a>
-      <a href="{% url 'about_site' %}">About Site</a>
-      {% if user.is_authenticated %}
-      <a href="{% url 'designer_dashboard' %}">Dashboard</a>
-      <form action="{% url 'logout' %}" method="post" class="nav-logout-form">
-        {% csrf_token %}
-        <button type="submit" class="nav-logout-btn">Logout</button>
-      </form>
-      {% else %}
-      <a href="{% url 'login' %}">Login</a>
-      <a href="{% url 'signup' %}" class="nav-trial-cta" aria-label="Start your free trial until you're satisfied">Start Free Trial</a>
-      {% endif %}
-    </nav>
+      <!-- Navigation -->
+      <nav class="nav">
+        <a href="{% url 'designers_list' %}">Designers</a>
+        <a href="{% url 'event_list' %}">Events</a>
+        <a href="{% url 'designer_reviews' %}">Reviews</a>
+        <a href="{% url 'about_site' %}">About Site</a>
+        {% if user.is_authenticated %}
+        <a href="{% url 'designer_dashboard' %}">Dashboard</a>
+        <form action="{% url 'logout' %}" method="post" class="nav-logout-form">
+          {% csrf_token %}
+          <button type="submit" class="nav-logout-btn">Logout</button>
+        </form>
+        {% else %}
+        <a href="{% url 'login' %}">Login</a>
+        <a href="{% url 'signup' %}" class="nav-trial-cta" aria-label="Start your free trial until you're satisfied">Start Free Trial</a>
+        {% endif %}
+      </nav>
 
     <!-- Social Links -->
     <div class="header__social">

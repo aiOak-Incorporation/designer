@@ -1,0 +1,185 @@
+{% extends "designer_portfolio/base.html" %}
+{% load static %}
+
+{% block content %}
+<section class="designer-reviews-section">
+  <div class="reviews-header">
+    <div class="reviews-header-top">
+      <div>
+        <h2>Registered Designers Reviews</h2>
+        <p>What our GlobalDesignerHub designers say about their experience.</p>
+      </div>
+      <button id="darkModeToggle" class="dark-mode-toggle" type="button">
+        🌙 Dark Mode
+      </button>
+    </div>
+    <h3 class="reviews-subtitle">Words That Inspire Us</h3>
+  </div>
+
+  <div class="reviews-carousel-wrapper">
+    <button class="carousel-arrow left" type="button" aria-label="Previous">
+      ‹
+    </button>
+
+    <div class="reviews-carousel" id="reviewsCarousel">
+      {% if page_obj|length %}
+        {% for review in page_obj|slice:":5" %}
+        <article class="review-card carousel-card">
+          <div class="review-top">
+            <img
+              src="{{ review.avatar_url }}"
+              class="review-avatar"
+              alt="{{ review.name }}"
+              loading="lazy"
+              onerror="this.onerror=null;this.src='{% static 'images/profile-placeholder.png' %}';"
+            />
+            <div>
+              <h3 class="review-name">{{ review.name }}</h3>
+              <p class="review-date">
+                {{ review.date|date:"M d, Y" }} • Verified Designer
+              </p>
+            </div>
+            {% if review.badge %}
+            <span class="review-badge">{{ review.badge }}</span>
+            {% endif %}
+          </div>
+
+          <div class="review-rating" aria-label="{{ review.rating }} out of 5 stars">
+            {% for star in "12345" %}
+              {% if forloop.counter <= review.rating %}
+              <svg class="star-icon star-filled" viewBox="0 0 20 20" aria-hidden="true">
+                <polygon points="10,1 12.6,7.1 19.1,7.3 14,11.5 15.7,18 10,14.5 4.3,18 6,11.5 0.9,7.3 7.4,7.1" />
+              </svg>
+              {% else %}
+              <svg class="star-icon" viewBox="0 0 20 20" aria-hidden="true">
+                <polygon points="10,1 12.6,7.1 19.1,7.3 14,11.5 15.7,18 10,14.5 4.3,18 6,11.5 0.9,7.3 7.4,7.1" />
+              </svg>
+              {% endif %}
+            {% endfor %}
+          </div>
+
+          <p class="review-text">
+            {{ review.text }}
+          </p>
+        </article>
+        {% empty %}
+        <p class="review-text">No featured reviews yet.</p>
+        {% endfor %}
+      {% else %}
+      <p class="page-info">No reviews available yet.</p>
+      {% endif %}
+    </div>
+
+    <button class="carousel-arrow right" type="button" aria-label="Next">
+      ›
+    </button>
+  </div>
+
+  <div class="reviews-grid">
+    {% for review in page_obj %}
+    <article class="review-card">
+      <div class="review-top">
+        <img
+          src="{{ review.avatar_url }}"
+          class="review-avatar"
+          alt="{{ review.name }}"
+          loading="lazy"
+          onerror="this.onerror=null;this.src='{% static 'images/profile-placeholder.png' %}';"
+        />
+        <div>
+          <h3 class="review-name">{{ review.name }}</h3>
+          <p class="review-date">
+            {{ review.date|date:"M d, Y" }} • Verified Designer
+          </p>
+        </div>
+        {% if review.badge %}
+        <span class="review-badge">{{ review.badge }}</span>
+        {% endif %}
+      </div>
+
+      <div class="review-rating" aria-label="{{ review.rating }} out of 5 stars">
+        {% for star in "12345" %}
+          {% if forloop.counter <= review.rating %}
+          <svg class="star-icon star-filled" viewBox="0 0 20 20" aria-hidden="true">
+            <polygon points="10,1 12.6,7.1 19.1,7.3 14,11.5 15.7,18 10,14.5 4.3,18 6,11.5 0.9,7.3 7.4,7.1" />
+          </svg>
+          {% else %}
+          <svg class="star-icon" viewBox="0 0 20 20" aria-hidden="true">
+            <polygon points="10,1 12.6,7.1 19.1,7.3 14,11.5 15.7,18 10,14.5 4.3,18 6,11.5 0.9,7.3 7.4,7.1" />
+          </svg>
+          {% endif %}
+        {% endfor %}
+      </div>
+
+      <p class="review-text">
+        {{ review.text }}
+      </p>
+    </article>
+    {% empty %}
+    <p class="page-info">No reviews on this page.</p>
+    {% endfor %}
+  </div>
+
+  <div class="reviews-pagination">
+    {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}" class="page-link">Previous</a>
+    {% endif %}
+
+    <span class="page-info">
+      Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+    </span>
+
+    {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}" class="page-link">Next</a>
+    <a href="?page={{ page_obj.next_page_number }}" class="load-more-btn">
+      Load More Reviews
+    </a>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+{{ block.super }}
+<script>
+  (function () {
+    const body = document.body;
+    const toggleBtn = document.getElementById("darkModeToggle");
+    const stored = localStorage.getItem("gdh-dark-mode");
+
+    if (stored === "on") {
+      body.classList.add("dark-mode");
+      if (toggleBtn) toggleBtn.textContent = "☀️ Light Mode";
+    }
+
+    if (toggleBtn) {
+      toggleBtn.addEventListener("click", () => {
+        const isDark = body.classList.toggle("dark-mode");
+        localStorage.setItem("gdh-dark-mode", isDark ? "on" : "off");
+        toggleBtn.textContent = isDark ? "☀️ Light Mode" : "🌙 Dark Mode";
+      });
+    }
+  })();
+
+  (function () {
+    const carousel = document.getElementById("reviewsCarousel");
+    if (!carousel) return;
+
+    const leftBtn = document.querySelector(".carousel-arrow.left");
+    const rightBtn = document.querySelector(".carousel-arrow.right");
+    const scrollAmount = 320;
+
+    if (leftBtn) {
+      leftBtn.addEventListener("click", () => {
+        carousel.scrollBy({ left: -scrollAmount, behavior: "smooth" });
+      });
+    }
+
+    if (rightBtn) {
+      rightBtn.addEventListener("click", () => {
+        carousel.scrollBy({ left: scrollAmount, behavior: "smooth" });
+      });
+    }
+  })();
+</script>
+{% endblock %}

@@ -2,7 +2,7 @@ import base64
 import base64
 import json
 from decimal import Decimal, InvalidOperation
-from datetime import timedelta
+from datetime import date, timedelta
 from pathlib import Path
 
 from django.shortcuts import render, redirect, get_object_or_404
@@ -21,11 +21,13 @@ from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.core.validators import URLValidator
+from django.core.paginator import Paginator
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.db import transaction
 from django.db.models import Q
 from django.urls import reverse_lazy, reverse
+from django.templatetags.static import static
 from .forms import DesignerSignUpForm, DesignerLoginForm, DesignerPasswordResetForm
 from .auth_utils import ensure_designer_access
 from .models import (
@@ -374,10 +376,131 @@ class DesignListView(TemplateView):
 
 class DesignDetailView(DetailView):
     template_name = "designer_portfolio/design_detail.html"
+
+
 class EventListView(TemplateView):
     template_name = "designer_portfolio/events.html"
+
+
 class EventDetailView(DetailView):
     template_name = "designer_portfolio/event_detail.html"
+
+
+def designer_reviews(request):
+    """Render a marketing-style page that highlights designer testimonials."""
+
+    reviews_data = [
+        {
+            "name": "Sophie Taylor",
+            "date": date(2025, 2, 10),
+            "rating": 5,
+            "avatar_url": static("images/home/1.png"),
+            "text": "The onboarding process was smooth, and the dashboard is super easy to use.",
+            "badge": "Top Rated",
+        },
+        {
+            "name": "Marcus Lee",
+            "date": date(2025, 1, 28),
+            "rating": 5,
+            "avatar_url": static("images/events/popup/1.png"),
+            "text": "A great platform to showcase my portfolios and get global visibility.",
+            "badge": "Verified",
+        },
+        {
+            "name": "Helen Dawson",
+            "date": date(2025, 1, 20),
+            "rating": 4,
+            "avatar_url": static("images/collection/collection1/4.png"),
+            "text": "Love the layout and how clients can easily browse my collections.",
+            "badge": "Pro",
+        },
+        {
+            "name": "Priya Raman",
+            "date": date(2024, 12, 18),
+            "rating": 5,
+            "avatar_url": static("images/events/popup/2.png"),
+            "text": "Scheduling live previews with buyers is seamless—saved me countless emails.",
+            "badge": "Featured",
+        },
+        {
+            "name": "Luca Bianchi",
+            "date": date(2024, 12, 2),
+            "rating": 5,
+            "avatar_url": static("images/home/2.png"),
+            "text": "Analytics helped me understand which designs resonate by region.",
+            "badge": "Global",
+        },
+        {
+            "name": "Amara Kingsley",
+            "date": date(2024, 11, 26),
+            "rating": 5,
+            "avatar_url": static("images/events/popup/3.png"),
+            "text": "The AI prompts keep my descriptions sharp and client ready.",
+            "badge": "AI Beta",
+        },
+        {
+            "name": "Daniel Ortiz",
+            "date": date(2024, 11, 12),
+            "rating": 4,
+            "avatar_url": static("images/collection/collection2/6.png"),
+            "text": "I onboarded my team in minutes and we now manage drops in one place.",
+            "badge": "Mentor",
+        },
+        {
+            "name": "Mei Chen",
+            "date": date(2024, 10, 30),
+            "rating": 5,
+            "avatar_url": static("images/collection/collection3/2.png"),
+            "text": "Loving the rich media galleries—my textile stories finally shine.",
+            "badge": "Style Lead",
+        },
+        {
+            "name": "Rafael Sousa",
+            "date": date(2024, 10, 12),
+            "rating": 4,
+            "avatar_url": static("images/collection/collection4/5.png"),
+            "text": "Client feedback forms plug directly into my workflow. Brilliant.",
+            "badge": "Beta Tester",
+        },
+        {
+            "name": "Lila Morgan",
+            "date": date(2024, 9, 28),
+            "rating": 5,
+            "avatar_url": static("images/collection/collection5/7.png"),
+            "text": "Dark mode dashboard is my daily go-to. It feels tailored to creatives.",
+            "badge": "Community",
+        },
+        {
+            "name": "Oliver Grant",
+            "date": date(2024, 9, 10),
+            "rating": 4,
+            "avatar_url": static("images/tekpak/4.png"),
+            "text": "Tech pack storage and sharing is painless compared to my old stack.",
+            "badge": "Creator",
+        },
+        {
+            "name": "Nia Wallace",
+            "date": date(2024, 8, 22),
+            "rating": 5,
+            "avatar_url": static("images/home/3.png"),
+            "text": "The community spotlights bring new collaborators to my inbox weekly.",
+            "badge": "Trendsetter",
+        },
+    ]
+
+    paginator = Paginator(reviews_data, 9)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    return render(
+        request,
+        "designer_portfolio/designer_reviews.html",
+        {
+            "page_obj": page_obj,
+        },
+    )
+
+
 class DesignerDashboardView(LoginRequiredMixin, TemplateView):
     template_name = "designer_portfolio/designer_dashboard.html"
 
