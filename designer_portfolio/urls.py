@@ -8,17 +8,31 @@ from .views import (
     CollectionsPageView,
     CollectionViewSet,
     CollectionDetailView,
-    DesignListView, DesignDetailView,
-    EventListView, EventDetailView,
+    DesignDetailView,
+    DesignListView,
+    EventDetailView,
+    EventListView,
+    BrandViewSet,
+    DesignViewSet,
+    EventViewSet,
+    PendingDesignersView,
+    approve_designer,
+    reject_designer,
+    reinstate_designer,
     upload_design,
-    BrandViewSet, DesignViewSet, EventViewSet,
-    PendingDesignersView, approve_designer, reject_designer, reinstate_designer,
-    AboutView, AboutSiteView,
-    DesignerDashboardView, designer_designs_view, designer_design_create_view, 
-    designer_design_edit_view, designer_design_delete_view, designer_design_detail_api,
-    designer_about_me_view, designer_contact_view,
+    AboutSiteView,
+    AboutView,
+    DesignerDashboardView,
+    designer_design_create_view,
+    designer_design_delete_view,
+    designer_design_detail_api,
+    designer_design_edit_view,
+    designer_designs_view,
+    designer_about_me_view,
+    designer_contact_view,
     DesignerRegistrationView,
     DesignersListView,
+    designer_reviews,
 )
 
 router = DefaultRouter()
@@ -37,6 +51,7 @@ urlpatterns = [
     
     # Designers
     path("designers/", DesignersListView.as_view(), name="designers_list"),
+    path("designer-reviews/", views.designer_reviews, name="designer_reviews"),
     
     path("designs/upload/", upload_design, name="upload_design"),  # 👈 Move this ABOVE
     path("designs/", DesignListView.as_view(), name="design_list"),
